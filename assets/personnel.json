@@ -1,1 +1,32 @@
-[]
+[
+    {
+        "name": "Ali Yılmaz",
+        "email": "ali@example.com",
+        "password": "123456",
+        "position": "Yazılım Geliştirici"
+    },
+    {
+        "name": "Zeynep Arslan",
+        "email": "zeynep@example.com",
+        "password": "654321",
+        "position": "Proje Yöneticisi"
+    },
+    {
+        "name": "Burak Şahin",
+        "email": "burak@example.com",
+        "password": "abcdef",
+        "position": "Sistem Mühendisi"
+    },
+    {
+        "name": "Deniz Aksoy",
+        "email": "deniz@example.com",
+        "password": "pass123",
+        "position": "UI/UX Tasarımcısı"
+    },
+    {
+        "name": "Selin Güneş",
+        "email": "selin@example.com",
+        "password": "admin789",
+        "position": "İK Yöneticisi"
+    }
+]

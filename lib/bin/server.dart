@@ -3,27 +3,11 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
-  // **SQLite için FFI başlatma**
-  sqfliteFfiInit();
-  var databaseFactory = databaseFactoryFfi;
-  var db = await databaseFactory.openDatabase(inMemoryDatabasePath);
-
-  // **Kullanıcı tablosunu oluştur (Admin ve Normal Kullanıcılar)**
-  await db.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, 
-      name TEXT, 
-      email TEXT UNIQUE, 
-      password TEXT, 
-      position TEXT
-    )
-  ''');
-
-  // **Personel JSON dosyasının yolunu tanımla**
+  // **Dosya yolları tanımlandı**
   final String personnelFilePath = 'assets/personnel.json';
+  final String usersFilePath = 'assets/users.json';
 
   // **Eğer assets klasörü yoksa oluştur**
   final Directory assetsDir = Directory('assets');
@@ -31,72 +15,24 @@ void main() async {
     assetsDir.createSync();
   }
 
-  // **Eğer personnel.json dosyası yoksa, boş bir liste oluştur**
+  // **Eğer JSON dosyaları yoksa, boş bir liste olarak oluştur**
   final File personnelFile = File(personnelFilePath);
   if (!personnelFile.existsSync()) {
-    personnelFile.writeAsStringSync(jsonEncode([])); // Boş JSON array oluştur
+    personnelFile.writeAsStringSync(jsonEncode([]));
   }
 
-  // **Router oluştur (Tüm API işlemleri buraya eklenecek)**
+  final File usersFile = File(usersFilePath);
+  if (!usersFile.existsSync()) {
+    usersFile.writeAsStringSync(jsonEncode([]));
+  }
+
+  // **Router oluştur**
   final router = Router();
 
-  // 📌 1. Kullanıcıları Listeleme (SQLite)
+  // 📌 1. Kullanıcıları Listeleme (`assets/users.json`)
   router.get('/users', (Request request) async {
     try {
-      var users = await db.rawQuery('SELECT * FROM users');
-      return Response.ok(jsonEncode(users),
-          headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
-    }
-  });
-
-  // 📌 2. Kullanıcı Ekleme (SQLite) → **Password ve Position ekledik**
-  router.post('/add-user', (Request request) async {
-    try {
-      final payload = await request.readAsString();
-      final data = jsonDecode(payload);
-
-      if (!data.containsKey('name') ||
-          !data.containsKey('email') ||
-          !data.containsKey('password') ||
-          !data.containsKey('position')) {
-        return Response(400,
-            body: 'Eksik alanlar: name, email, password, position');
-      }
-
-      String name = data['name'];
-      String email = data['email'];
-      String password = data['password'];
-      String position = data['position'];
-
-      await db.insert('users', {
-        'name': name,
-        'email': email,
-        'password': password,
-        'position': position
-      });
-
-      return Response.ok(
-          jsonEncode({
-            "status": "success",
-            "message": "Kullanıcı eklendi",
-            "user": {"name": name, "email": email, "position": position}
-          }),
-          headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
-    }
-  });
-
-  // 📌 3. Admin - Personelleri Listeleme (`assets/personnel.json` içinden)
-  router.get('/admin/personnel', (Request request) async {
-    try {
-      final jsonData = jsonDecode(await personnelFile.readAsString());
+      final jsonData = jsonDecode(await usersFile.readAsString());
       return Response.ok(jsonEncode(jsonData),
           headers: {'Content-Type': 'application/json'});
     } catch (e) {
@@ -106,45 +42,49 @@ void main() async {
     }
   });
 
-  // 📌 4. Admin - Yeni Personel Ekleme (`assets/personnel.json` içine yazma)
-  router.post('/admin/add-personnel', (Request request) async {
+  // 📌 2. Yeni Kullanıcı Ekleme (`assets/users.json` içine yazma)
+  router.post('/add-user', (Request request) async {
     try {
       final payload = await request.readAsString();
       final data = jsonDecode(payload);
 
       if (!data.containsKey('name') ||
           !data.containsKey('email') ||
-          !data.containsKey('password') ||
-          !data.containsKey('position')) {
+          !data.containsKey('phone') ||
+          !data.containsKey('trade_status')) {
         return Response(400,
-            body: 'Eksik alanlar: name, email, password, position');
+            body: 'Eksik alanlar: name, email, phone, trade_status');
       }
 
       final String name = data['name'];
       final String email = data['email'];
-      final String password = data['password'];
-      final String position = data['position'];
+      final String phone = data['phone'];
+      final bool tradeStatus = data['trade_status'];
 
-      // **JSON dosyasındaki mevcut personelleri oku**
-      List<dynamic> personnelList =
-          jsonDecode(await personnelFile.readAsString());
+      List<dynamic> userList = jsonDecode(await usersFile.readAsString());
 
-      // **Yeni personeli listeye ekle**
-      personnelList.add({
+      // Kullanıcıya başlangıçta yatırım yapmadı (false) bilgisi ekleniyor
+      userList.add({
         'name': name,
         'email': email,
-        'password': password,
-        'position': position
+        'phone': phone,
+        'trade_status': tradeStatus,
+        'investment_status': false // Varsayılan olarak "yatırım yapmadı"
       });
 
-      // **JSON dosyasına güncellenmiş listeyi yaz**
-      await personnelFile.writeAsString(jsonEncode(personnelList));
+      await usersFile.writeAsString(jsonEncode(userList));
 
       return Response.ok(
           jsonEncode({
             "status": "success",
-            "message": "Personel eklendi",
-            "personnel": {"name": name, "email": email, "position": position}
+            "message": "Kullanıcı eklendi",
+            "user": {
+              "name": name,
+              "email": email,
+              "phone": phone,
+              "trade_status": tradeStatus,
+              "investment_status": false
+            }
           }),
           headers: {'Content-Type': 'application/json'});
     } catch (e) {
@@ -154,21 +94,39 @@ void main() async {
     }
   });
 
-  // 📌 5. Admin - Personel Silme (`assets/personnel.json` içinden)
-  router.delete('/admin/delete-personnel/<email>',
+  // 📌 3. Kullanıcının `investment_status` Bilgisini Güncelleme (Personel Kullanacak)
+  router.put('/update-investment-status/<email>',
       (Request request, String email) async {
     try {
-      List<dynamic> personnelList =
-          jsonDecode(await personnelFile.readAsString());
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
 
-      // **Silinecek personeli listeden çıkar**
-      personnelList.removeWhere((person) => person['email'] == email);
+      if (!data.containsKey('investment_status')) {
+        return Response(400, body: 'Eksik alan: investment_status');
+      }
 
-      // **Güncellenmiş JSON dosyasını kaydet**
-      await personnelFile.writeAsString(jsonEncode(personnelList));
+      final bool newInvestmentStatus = data['investment_status'];
 
-      return Response.ok(
-          jsonEncode({"status": "success", "message": "Personel silindi"}));
+      List<dynamic> userList = jsonDecode(await usersFile.readAsString());
+
+      bool userFound = false;
+
+      for (var user in userList) {
+        if (user['email'] == email) {
+          user['investment_status'] = newInvestmentStatus;
+          userFound = true;
+          break;
+        }
+      }
+
+      if (!userFound) {
+        return Response.notFound(jsonEncode({"error": "Kullanıcı bulunamadı"}));
+      }
+
+      await usersFile.writeAsString(jsonEncode(userList));
+
+      return Response.ok(jsonEncode(
+          {"status": "success", "message": "Yatırım durumu güncellendi"}));
     } catch (e) {
       return Response.internalServerError(
           body: jsonEncode({"error": e.toString()}),
@@ -176,18 +134,35 @@ void main() async {
     }
   });
 
-  // Middleware ekleme (CORS + Logging)
+  // 📌 4. Admin - Kullanıcı İstatistiklerini Getirme
+  router.get('/admin/stats', (Request request) async {
+    try {
+      final List<dynamic> userList = jsonDecode(await usersFile.readAsString());
+
+      int totalUsers = userList.length;
+      int investedUsers =
+          userList.where((user) => user['investment_status'] == true).length;
+
+      return Response.ok(
+          jsonEncode(
+              {"total_users": totalUsers, "invested_users": investedUsers}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": e.toString()}),
+          headers: {'Content-Type': 'application/json'});
+    }
+  });
+
   var handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(corsMiddleware)
       .addHandler(router.call);
 
-  // **Sunucuyu başlat**
   var server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
   print('✅ Server running on http://${server.address.host}:${server.port}');
 }
 
-// ✅ CORS Middleware Tanımlama
 final Middleware corsMiddleware = (Handler innerHandler) {
   return (Request request) async {
     if (request.method == 'OPTIONS') {
@@ -198,7 +173,6 @@ final Middleware corsMiddleware = (Handler innerHandler) {
   };
 };
 
-// ✅ CORS Headers Tanımlama
 const Map<String, String> _corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
