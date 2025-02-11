@@ -42,6 +42,7 @@ dependencies:
   shelf_cors_headers: ^0.1.5
   sqflite_common_ffi: ^2.3.0
   provider: ^6.1.2
+  jaguar_jwt: ^3.0.0
 
 
 dev_dependencies:
