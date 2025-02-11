@@ -1,7 +1,7 @@
 import 'package:crm_k/screens/dashboard/V/dashboard_view.dart';
 import 'package:crm_k/screens/home_screen/V/home2.dart';
-import 'package:crm_k/screens/home_screen/V/home_screen_view.dart';
 import 'package:crm_k/screens/viewtest/view_test.dart';
+import 'package:crm_k/test_main.dart';
 import 'package:flutter/material.dart';
 
 class DrawerViewModel {
@@ -12,6 +12,7 @@ class DrawerViewModel {
     "Müşteriler": {Icons.group: CustomerListScreen()},
     "Raporlar": {Icons.bar_chart: DashboardScreen()},
     "test": {Icons.call: TestView()},
+    "test2": {Icons.call: TestAppState()},
     "Mesajlar": {Icons.message: DashboardScreen()},
     "Bildirimler": {Icons.notifications: DashboardScreen()},
     "Görevler": {Icons.check_circle: DashboardScreen()},
