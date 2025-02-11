@@ -11,14 +11,17 @@ class HomeScreenView extends StatefulWidget {
 }
 
 class _HomeScreenViewState extends State<HomeScreenView> {
-  Widget _selectedPage = DashboardScreen(); // Başlangıç sayfası
+  Widget _selectedPage = const DashboardScreen(); // Başlangıç sayfası
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("CRM Paneli"),
         actions: [
-          Container(margin: EdgeInsets.only(right: 15), child: LiveClock())
+          Container(
+              margin: const EdgeInsets.only(right: 15),
+              child: const LiveClock())
         ],
       ),
       drawer: DynamicDrawer(
@@ -28,7 +31,13 @@ class _HomeScreenViewState extends State<HomeScreenView> {
           });
         },
       ),
-      body: _selectedPage, // Sadece body değişecek
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          // Geçiş efektleri için
+          duration: const Duration(milliseconds: 300),
+          child: _selectedPage, // Yalnızca body değişecek
+        ),
+      ),
     );
   }
 }
