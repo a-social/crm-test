@@ -1,6 +1,5 @@
-import 'package:crm_k/core/widgets/drawer/F/drawer_viewmodel.dart';
-import 'package:crm_k/core/widgets/live_clock/V/live_clock_view.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_k/core/widgets/drawer/F/drawer_viewmodel.dart';
 
 class DynamicDrawer extends StatelessWidget {
   final Function(Widget) onMenuSelected;
@@ -13,29 +12,27 @@ class DynamicDrawer extends StatelessWidget {
       child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(),
+            decoration: BoxDecoration(color: Colors.blue),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Menü", style: TextStyle(fontSize: 24)),
                 SizedBox(height: 10),
-                LiveClock(), // Canlı saat widget'ı
               ],
             ),
           ),
           Expanded(
             child: ListView(
               children: DrawerViewModel.menuItems.entries.map((entry) {
-                IconData icon = entry.value.keys.first;
                 String title = entry.key;
+                IconData icon = entry.value.keys.first;
                 Widget page = entry.value.values.first;
 
                 return ListTile(
                   leading: Icon(icon),
                   title: Text(title),
                   onTap: () {
-                    Navigator.pop(context);
-                    onMenuSelected(page);
+                    Navigator.pop(context); // Drawer'ı kapat
+                    onMenuSelected(page); // Yeni sayfayı yükle
                   },
                 );
               }).toList(),

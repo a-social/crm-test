@@ -1,4 +1,3 @@
-import 'package:crm_k/core/functions/global_functions.dart';
 import 'package:crm_k/core/icons/unit_icons.dart';
 import 'package:crm_k/core/lang/unit_strings.dart';
 import 'package:crm_k/core/widgets/loading_view/V/loading_indicator_project_view.dart';
@@ -17,12 +16,12 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true; // Şifre gizleme/gösterme kontrolü
+  bool _obscurePassword = true;
+  bool _isLoading = false; // Sınıf değişkeni olarak tanımla!
 
   @override
   Widget build(BuildContext context) {
     final loginVM = Provider.of<LoginViewModel>(context);
-    bool isLoading = false;
 
     return Scaffold(
       body: Stack(
@@ -43,8 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               child: Column(
-                mainAxisSize:
-                    MainAxisSize.min, // Container içeriği kadar olacak
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(UnitStrings.loginText,
                       style:
@@ -74,8 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword
-                            ? (Icons.visibility)
-                            : (Icons.visibility_off)),
+                            ? Icons.visibility
+                            : Icons.visibility_off),
                         onPressed: () {
                           setState(() {
                             _obscurePassword = !_obscurePassword;
@@ -90,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton(
                     onPressed: () async {
                       setState(() {
-                        isLoading = !isLoading;
+                        _isLoading = true; // Loading ekranını aç
                       });
 
                       bool success = await loginVM.checkMailAndPassword(
@@ -103,19 +101,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           SnackBar(content: Text("Giriş başarılı!")),
                         );
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => HomeScreenView()));
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreenView(),
+                          ),
+                        );
                       }
+
                       await Future.delayed(Duration(seconds: 2));
-                      print('selamlar');
 
                       setState(() {
-                        isLoading = !isLoading;
+                        _isLoading = false; // Loading ekranını kapat
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50), // Butonu genişlet
+                      minimumSize: Size(double.infinity, 50),
                     ),
                     child: Text("Giriş Yap"),
                   ),
@@ -131,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          LoadingView(loading_value: isLoading),
+          if (_isLoading)
+            LoadingView(
+                loading_value: _isLoading), // Sadece true olduğunda göster
         ],
       ),
     );

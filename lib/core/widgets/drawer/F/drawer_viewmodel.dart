@@ -1,3 +1,4 @@
+import 'package:crm_k/screens/dashboard/V/dashboard_view.dart';
 import 'package:crm_k/screens/home_screen/V/home2.dart';
 import 'package:crm_k/screens/home_screen/V/home_screen_view.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,7 @@ class DrawerViewModel {
   static final Map<String, Map<IconData, Widget>> menuItems = {
     "Ana Sayfa": {Icons.dashboard: HomeScreenView()},
     "Profil": {Icons.person: UserListScreen()},
-    "Ayarlar": {Icons.settings: HomeScreenView()},
+    "Ayarlar": {Icons.settings: DashboardScreen()},
     "Müşteriler": {Icons.group: HomeScreenView()},
     "Raporlar": {Icons.bar_chart: HomeScreenView()},
     "Çağrılar": {Icons.call: HomeScreenView()},
