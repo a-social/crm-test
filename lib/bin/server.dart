@@ -3,19 +3,46 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:jaguar_jwt/jaguar_jwt.dart';
+
+const String secretKey = "superSecretKey"; // JWT Secret Key
+
+String generateJWT(String email, String role) {
+  final claimSet = JwtClaim(
+    issuer: 'your_server',
+    subject: email,
+    otherClaims: {'role': role},
+    maxAge: const Duration(days: 1),
+  );
+
+  return issueJwtHS256(claimSet, secretKey);
+}
+
+bool verifyJWT(String token) {
+  try {
+    final JwtClaim claimSet = verifyJwtHS256Signature(token, secretKey);
+    claimSet.validate(issuer: 'your_server');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+void logAction(String action) {
+  final logFile = File('logs.txt');
+  final logEntry = "[${DateTime.now()}] $action\n";
+  logFile.writeAsStringSync(logEntry, mode: FileMode.append);
+}
 
 void main() async {
-  // **Dosya yolları tanımlandı**
   final String personnelFilePath = 'assets/personnel.json';
   final String usersFilePath = 'assets/users.json';
 
-  // **Eğer assets klasörü yoksa oluştur**
   final Directory assetsDir = Directory('assets');
   if (!assetsDir.existsSync()) {
     assetsDir.createSync();
   }
 
-  // **Eğer JSON dosyaları yoksa, boş bir liste olarak oluştur**
   final File personnelFile = File(personnelFilePath);
   if (!personnelFile.existsSync()) {
     personnelFile.writeAsStringSync(jsonEncode([]));
@@ -26,132 +53,138 @@ void main() async {
     usersFile.writeAsStringSync(jsonEncode([]));
   }
 
-  // **Router oluştur**
   final router = Router();
 
-  // 📌 1. Kullanıcıları Listeleme (`assets/users.json`)
+  router.post('/login', (Request request) async {
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+
+    final String email = data['email'];
+    final String password = data['password'];
+
+    final List<dynamic> personnelList =
+        jsonDecode(await personnelFile.readAsString());
+
+    final person = personnelList.firstWhere(
+        (p) => p['email'] == email && p['password'] == password,
+        orElse: () => null);
+
+    if (person == null) {
+      return Response.forbidden(jsonEncode({"error": "Yetkisiz giriş"}));
+    }
+
+    final String token = generateJWT(email, "personel");
+    return Response.ok(jsonEncode({"token": token}),
+        headers: {'Content-Type': 'application/json'});
+  });
+
   router.get('/users', (Request request) async {
-    try {
-      final jsonData = jsonDecode(await usersFile.readAsString());
-      return Response.ok(jsonEncode(jsonData),
-          headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
+    final token = request.headers['Authorization'];
+    if (token == null || !verifyJWT(token)) {
+      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
     }
+
+    final jsonData = jsonDecode(await usersFile.readAsString());
+    return Response.ok(jsonEncode(jsonData),
+        headers: {'Content-Type': 'application/json'});
   });
 
-  // 📌 2. Yeni Kullanıcı Ekleme (`assets/users.json` içine yazma)
   router.post('/add-user', (Request request) async {
-    try {
-      final payload = await request.readAsString();
-      final data = jsonDecode(payload);
-
-      if (!data.containsKey('name') ||
-          !data.containsKey('email') ||
-          !data.containsKey('phone') ||
-          !data.containsKey('trade_status')) {
-        return Response(400,
-            body: 'Eksik alanlar: name, email, phone, trade_status');
-      }
-
-      final String name = data['name'];
-      final String email = data['email'];
-      final String phone = data['phone'];
-      final bool tradeStatus = data['trade_status'];
-
-      List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-      // Kullanıcıya başlangıçta yatırım yapmadı (false) bilgisi ekleniyor
-      userList.add({
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'trade_status': tradeStatus,
-        'investment_status': false // Varsayılan olarak "yatırım yapmadı"
-      });
-
-      await usersFile.writeAsString(jsonEncode(userList));
-
-      return Response.ok(
-          jsonEncode({
-            "status": "success",
-            "message": "Kullanıcı eklendi",
-            "user": {
-              "name": name,
-              "email": email,
-              "phone": phone,
-              "trade_status": tradeStatus,
-              "investment_status": false
-            }
-          }),
-          headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
+    final token = request.headers['Authorization'];
+    if (token == null || !verifyJWT(token)) {
+      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
     }
+
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+
+    if (!data.containsKey('name') ||
+        !data.containsKey('email') ||
+        !data.containsKey('phone') ||
+        !data.containsKey('trade_status')) {
+      return Response(400,
+          body: 'Eksik alanlar: name, email, phone, trade_status');
+    }
+
+    final String name = data['name'];
+    final String email = data['email'];
+    final String phone = data['phone'];
+    final bool tradeStatus = data['trade_status'];
+
+    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
+
+    userList.add({
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'trade_status': tradeStatus,
+      'investment_status': false,
+      'created_at': DateTime.now().toIso8601String()
+    });
+
+    await usersFile.writeAsString(jsonEncode(userList));
+
+    logAction("Yeni kullanıcı eklendi: $name ($email)");
+
+    return Response.ok(
+        jsonEncode({"status": "success", "message": "Kullanıcı eklendi"}),
+        headers: {'Content-Type': 'application/json'});
   });
 
-  // 📌 3. Kullanıcının `investment_status` Bilgisini Güncelleme (Personel Kullanacak)
-  router.put('/update-investment-status/<email>',
-      (Request request, String email) async {
-    try {
-      final payload = await request.readAsString();
-      final data = jsonDecode(payload);
-
-      if (!data.containsKey('investment_status')) {
-        return Response(400, body: 'Eksik alan: investment_status');
-      }
-
-      final bool newInvestmentStatus = data['investment_status'];
-
-      List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-      bool userFound = false;
-
-      for (var user in userList) {
-        if (user['email'] == email) {
-          user['investment_status'] = newInvestmentStatus;
-          userFound = true;
-          break;
-        }
-      }
-
-      if (!userFound) {
-        return Response.notFound(jsonEncode({"error": "Kullanıcı bulunamadı"}));
-      }
-
-      await usersFile.writeAsString(jsonEncode(userList));
-
-      return Response.ok(jsonEncode(
-          {"status": "success", "message": "Yatırım durumu güncellendi"}));
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
+  router.put('/update-user/<email>', (Request request, String email) async {
+    final token = request.headers['Authorization'];
+    if (token == null || !verifyJWT(token)) {
+      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
     }
+
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+
+    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
+
+    bool userFound = false;
+
+    for (var user in userList) {
+      if (user['email'] == email) {
+        user.addAll(data);
+        userFound = true;
+        break;
+      }
+    }
+
+    if (!userFound) {
+      return Response.notFound(jsonEncode({"error": "Kullanıcı bulunamadı"}));
+    }
+
+    await usersFile.writeAsString(jsonEncode(userList));
+
+    logAction("Kullanıcı güncellendi: $email");
+
+    return Response.ok(
+        jsonEncode({"status": "success", "message": "Kullanıcı güncellendi"}));
   });
 
-  // 📌 4. Admin - Kullanıcı İstatistiklerini Getirme
-  router.get('/admin/stats', (Request request) async {
-    try {
-      final List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-      int totalUsers = userList.length;
-      int investedUsers =
-          userList.where((user) => user['investment_status'] == true).length;
-
-      return Response.ok(
-          jsonEncode(
-              {"total_users": totalUsers, "invested_users": investedUsers}),
-          headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": e.toString()}),
-          headers: {'Content-Type': 'application/json'});
+  router.delete('/delete-user/<email>', (Request request, String email) async {
+    final token = request.headers['Authorization'];
+    if (token == null || !verifyJWT(token)) {
+      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
     }
+
+    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
+
+    int initialLength = userList.length;
+    userList.removeWhere((user) => user['email'] == email);
+
+    if (userList.length == initialLength) {
+      return Response.notFound(jsonEncode({"error": "Kullanıcı bulunamadı"}));
+    }
+
+    await usersFile.writeAsString(jsonEncode(userList));
+
+    logAction("Kullanıcı silindi: $email");
+
+    return Response.ok(
+        jsonEncode({"status": "success", "message": "Kullanıcı silindi"}));
   });
 
   var handler = const Pipeline()
