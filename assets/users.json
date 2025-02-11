@@ -1,1 +1,45 @@
-[{"name":"Mehmet Can","email":"mehmet@example.com","phone":"5551234567"},{"name":"Şahan","email":"sahan@example.com","phone":"5318194656"},{"name":"Ahmet Kaya","email":"ahmet@example.com","phone":"5551234567","trade_status":false},{"name":"Mehmet Yılmaz","email":"mehmet@example.com","phone":"5552345678","trade_status":true},{"name":"Ayşe Demir","email":"ayse@example.com","phone":"5553456789","trade_status":false},{"name":"Fatma Çelik","email":"fatma@example.com","phone":"5554567890","trade_status":true},{"name":"Emre Şahin","email":"emre@example.com","phone":"5555678901","trade_status":false,"investment_status":true},{"name":"emrah Şahin","email":"emre@example.com","phone":"5555678901","trade_status":true,"investment_status":false}]
+[
+    {
+        "name": "Şahan",
+        "email": "sahan@example.com",
+        "phone": "5318194656"
+    },
+    {
+        "name": "Ahmet Kaya",
+        "email": "ahmet@example.com",
+        "phone": "5551234567",
+        "trade_status": false
+    },
+    {
+        "name": "Mehmet Yılmaz",
+        "email": "mehmet@example.com",
+        "phone": "5552345678",
+        "trade_status": true
+    },
+    {
+        "name": "Ayşe Demir",
+        "email": "ayse@example.com",
+        "phone": "5553456789",
+        "trade_status": false
+    },
+    {
+        "name": "Fatma Çelik",
+        "email": "fatma@example.com",
+        "phone": "5554567890",
+        "trade_status": true
+    },
+    {
+        "name": "Emre Şahin",
+        "email": "emre@example.com",
+        "phone": "5555678901",
+        "trade_status": false,
+        "investment_status": true
+    },
+    {
+        "name": "emrah Şahin",
+        "email": "emre@example.com",
+        "phone": "5555678901",
+        "trade_status": true,
+        "investment_status": false
+    }
+]

@@ -56,26 +56,50 @@ void main() async {
   final router = Router();
 
   router.post('/login', (Request request) async {
-    final payload = await request.readAsString();
-    final data = jsonDecode(payload);
+    try {
+      final payload = await request.readAsString();
 
-    final String email = data['email'];
-    final String password = data['password'];
+      if (payload.isEmpty) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Boş istek gönderildi"}));
+      }
 
-    final List<dynamic> personnelList =
-        jsonDecode(await personnelFile.readAsString());
+      final Map<String, dynamic> data = jsonDecode(payload);
 
-    final person = personnelList.firstWhere(
-        (p) => p['email'] == email && p['password'] == password,
-        orElse: () => null);
+      if (!data.containsKey('email') || !data.containsKey('password')) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Email ve şifre zorunludur"}));
+      }
 
-    if (person == null) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz giriş"}));
+      final String? email = data['email'];
+      final String? password = data['password'];
+
+      if (email == null || password == null) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Email veya şifre null olamaz"}));
+      }
+
+      final List<dynamic> personnelList =
+          jsonDecode(await personnelFile.readAsString());
+
+      final person = personnelList.firstWhere(
+          (p) => p['email'] == email && p['password'] == password,
+          orElse: () => null);
+
+      if (person == null) {
+        return Response.forbidden(
+            jsonEncode({"error": "Geçersiz email veya şifre"}));
+      }
+
+      final String token = generateJWT(email, "personel");
+
+      return Response.ok(jsonEncode({"token": token}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": "Sunucu hatası: ${e.toString()}"}),
+          headers: {'Content-Type': 'application/json'});
     }
-
-    final String token = generateJWT(email, "personel");
-    return Response.ok(jsonEncode({"token": token}),
-        headers: {'Content-Type': 'application/json'});
   });
 
   router.get('/users', (Request request) async {
