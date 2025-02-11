@@ -10,25 +10,23 @@ void main() async {
   sqfliteFfiInit();
   var databaseFactory = databaseFactoryFfi;
   var db = await databaseFactory.openDatabase(inMemoryDatabasePath);
+
+  // Admin tablosunu oluştur
   await db.execute('''
-    CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY, 
+      name TEXT, 
+      email TEXT UNIQUE
+    )
   ''');
 
-  // Router oluşturma
+  // Router oluştur
   final router = Router();
 
-  // Kullanıcıları getiren endpoint
-  // router.get('/users', (Request request) async {
-  //   var users = await db.rawQuery('SELECT * FROM users');
-  //   return Response.ok(users.toString(),
-  //       headers: {'Content-Type': 'application/json'});
-  // });
-
-  router.get('/users', (Request request) async {
+  // 📌 1. Admin Kullanıcılarını Listeleme
+  router.get('/admin/users', (Request request) async {
     try {
       var users = await db.rawQuery('SELECT * FROM users');
-
-      // Veriyi JSON formatına çevir
       return Response.ok(jsonEncode(users),
           headers: {'Content-Type': 'application/json'});
     } catch (e) {
@@ -38,45 +36,82 @@ void main() async {
     }
   });
 
-  // Kullanıcı ekleyen endpoint
-  // router.post('/add-user', (Request request) async {
-  //   var name = 'User ${request}';
-  //   var email = '$name@example.com';
-  //   await db.rawInsert(
-  //       'INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
-  //   return Response.ok('User added: $name');
-  // });
-  router.post('/add-user', (Request request) async {
+  // 📌 2. Tüm Personelleri Listeleme (JSON Dosyasından)
+  router.get('/admin/personnel', (Request request) async {
     try {
-      // Content-Type kontrolü
-      if (request.headers['Content-Type'] != 'application/json') {
-        return Response(400,
-            body: 'Invalid Content-Type. Use application/json');
+      final File file = File('personnel.json');
+      if (!file.existsSync()) {
+        return Response.ok(jsonEncode([]),
+            headers: {'Content-Type': 'application/json'});
+      }
+      final jsonData = jsonDecode(await file.readAsString());
+      return Response.ok(jsonEncode(jsonData),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": e.toString()}),
+          headers: {'Content-Type': 'application/json'});
+    }
+  });
+
+  // 📌 3. Yeni Personel Ekleme (JSON Dosyasına Yazma)
+  router.post('/admin/add-personnel', (Request request) async {
+    try {
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      if (!data.containsKey('name') ||
+          !data.containsKey('email') ||
+          !data.containsKey('password')) {
+        return Response(400, body: 'Eksik alanlar: name, email, password');
       }
 
-      // JSON verisini oku
-      final requestBody = await request.readAsString();
-      final data = jsonDecode(requestBody);
+      final String name = data['name'];
+      final String email = data['email'];
+      final String password = data['password'];
 
-      // JSON'dan gelen verileri al
-      if (!data.containsKey('name') || !data.containsKey('email')) {
-        return Response(400, body: 'Missing required fields: name, email');
+      final File file = File('personnel.json');
+
+      List<dynamic> personnelList = [];
+      if (file.existsSync()) {
+        personnelList = jsonDecode(await file.readAsString());
       }
 
-      String name = data['name'];
-      String email = data['email'];
+      personnelList.add({'name': name, 'email': email, 'password': password});
 
-      // Veriyi veritabanına ekle
-      await db.rawInsert(
-          'INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
+      await file.writeAsString(jsonEncode(personnelList));
 
       return Response.ok(
           jsonEncode({
             "status": "success",
-            "message": "User added",
-            "user": {"name": name, "email": email}
+            "message": "Personel eklendi",
+            "personnel": {"name": name, "email": email}
           }),
           headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": e.toString()}),
+          headers: {'Content-Type': 'application/json'});
+    }
+  });
+
+  // 📌 4. Personel Silme (JSON Dosyasından)
+  router.delete('/admin/delete-personnel/<email>',
+      (Request request, String email) async {
+    try {
+      final File file = File('personnel.json');
+
+      if (!file.existsSync()) {
+        return Response.notFound(jsonEncode({"error": "Personel bulunamadı"}));
+      }
+
+      List<dynamic> personnelList = jsonDecode(await file.readAsString());
+      personnelList.removeWhere((person) => person['email'] == email);
+
+      await file.writeAsString(jsonEncode(personnelList));
+
+      return Response.ok(
+          jsonEncode({"status": "success", "message": "Personel silindi"}));
     } catch (e) {
       return Response.internalServerError(
           body: jsonEncode({"error": e.toString()}),
