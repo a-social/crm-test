@@ -49,3 +49,22 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     );
   }
 }
+
+class TestView extends StatefulWidget {
+  const TestView({super.key});
+
+  @override
+  State<TestView> createState() => _TestViewState();
+}
+
+class _TestViewState extends State<TestView> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(appBar: AppBar());
+  }
+}

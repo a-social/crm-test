@@ -4,8 +4,6 @@ import 'package:crm_k/screens/login_screen/VM/login_screen_viewmodule.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'database/heidisql.dart';
-
 Future<void> main() async {
   runApp(
     MultiProvider(
@@ -21,12 +19,4 @@ Future<void> main() async {
       ),
     ),
   );
-  await HeidiSQL.connect();
-
-  // Müşteri ekleme
-  await HeidiSQL.addCustomer(
-      "Ahmet Yılmaz", "+905552223344", "ahmet@example.com");
-
-  // Müşterileri listeleme
-  await HeidiSQL.getCustomers();
 }
