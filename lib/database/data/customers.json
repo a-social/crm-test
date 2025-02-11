@@ -1,0 +1,23 @@
+{
+    "customers": [
+      {
+        "name": "Ahmet Yılmaz",
+        "phone": "+905552223344",
+        "email": "ahmet@example.com"
+      },
+      {
+        "name": "Elif Kaya",
+        "phone": "+905554446677",
+        "email": "elif@example.com"
+      }
+    ],
+    "admins": [
+      {
+        "name": "Super Admin",
+        "phone": "+905500000000",
+        "email": "admin@crm.com",
+        "password": "Admin123!"
+      }
+    ]
+  }
+  
