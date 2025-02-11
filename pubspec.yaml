@@ -41,7 +41,7 @@ dependencies:
   shelf_router: ^1.1.4
   shelf_cors_headers: ^0.1.5
   provider: ^6.1.2
-  jaguar_jwt: ^3.0.0
+  jaguar_jwt: 3.0.0
 
 
 dev_dependencies:

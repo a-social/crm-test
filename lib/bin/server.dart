@@ -28,6 +28,16 @@ bool verifyJWT(String token) {
   }
 }
 
+bool isAdmin(String token) {
+  try {
+    final JwtClaim claimSet = verifyJwtHS256Signature(token, secretKey);
+    final String role = claimSet.payload['role'];
+    return role == "admin";
+  } catch (e) {
+    return false;
+  }
+}
+
 void logAction(String action) {
   final logFile = File('logs.txt');
   final logEntry = "[${DateTime.now()}] $action\n";
@@ -37,6 +47,7 @@ void logAction(String action) {
 void main() async {
   final String personnelFilePath = 'assets/personnel.json';
   final String usersFilePath = 'assets/users.json';
+  final String adminFilePath = 'assets/admin.json';
 
   final Directory assetsDir = Directory('assets');
   if (!assetsDir.existsSync()) {
@@ -53,7 +64,54 @@ void main() async {
     usersFile.writeAsStringSync(jsonEncode([]));
   }
 
+  final File adminFile = File(adminFilePath);
+  if (!adminFile.existsSync()) {
+    adminFile.writeAsStringSync(jsonEncode([]));
+  }
+
   final router = Router();
+
+  router.post('/admin-login', (Request request) async {
+    try {
+      final payload = await request.readAsString();
+
+      if (payload.isEmpty) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Boş istek gönderildi"}));
+      }
+
+      final Map<String, dynamic> data = jsonDecode(payload);
+
+      if (!data.containsKey('email') || !data.containsKey('password')) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Email ve şifre zorunludur"}));
+      }
+
+      final String email = data['email'];
+      final String password = data['password'];
+
+      final List<dynamic> adminList =
+          jsonDecode(await adminFile.readAsString());
+
+      final admin = adminList.firstWhere(
+          (a) => a['email'] == email && a['password'] == password,
+          orElse: () => null);
+
+      if (admin == null) {
+        return Response.forbidden(
+            jsonEncode({"error": "Geçersiz email veya şifre"}));
+      }
+
+      final String token = generateJWT(email, "admin");
+
+      return Response.ok(jsonEncode({"token": token}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": "Sunucu hatası: ${e.toString()}"}),
+          headers: {'Content-Type': 'application/json'});
+    }
+  });
 
   router.post('/login', (Request request) async {
     try {
@@ -188,10 +246,16 @@ void main() async {
         jsonEncode({"status": "success", "message": "Kullanıcı güncellendi"}));
   });
 
+  // 📌 Kullanıcı Silme (Sadece Admin)
   router.delete('/delete-user/<email>', (Request request, String email) async {
     final token = request.headers['Authorization'];
     if (token == null || !verifyJWT(token)) {
       return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
+    }
+
+    if (!isAdmin(token)) {
+      return Response.forbidden(
+          jsonEncode({"error": "Sadece adminler kullanıcı silebilir"}));
     }
 
     List<dynamic> userList = jsonDecode(await usersFile.readAsString());
@@ -205,7 +269,7 @@ void main() async {
 
     await usersFile.writeAsString(jsonEncode(userList));
 
-    logAction("Kullanıcı silindi: $email");
+    logAction("Admin kullanıcısı silindi: $email");
 
     return Response.ok(
         jsonEncode({"status": "success", "message": "Kullanıcı silindi"}));
