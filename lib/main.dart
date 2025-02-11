@@ -1,5 +1,8 @@
-import 'package:crm_k/screens/home_screen/V/home_screen_view.dart';
+import 'package:crm_k/core/widgets/loading_view/VM/loading_viewmodule.dart';
+import 'package:crm_k/screens/login_screen/V/login_screen_view.dart';
+import 'package:crm_k/screens/login_screen/VM/login_screen_viewmodule.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'database/mongodb.dart';
 
 void main() async {
@@ -20,4 +23,21 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark(),
     );
   }
+=======
+import 'package:provider/provider.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LoadingProvider()),
+        ChangeNotifierProvider(create: (_) => LoginViewModel()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: LoginScreen(),
+      ),
+    ),
+  );
+>>>>>>> 700e1dcfd9a7e588380cfac640b9a1a38c1de586
 }

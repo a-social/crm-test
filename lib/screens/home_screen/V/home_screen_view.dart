@@ -27,9 +27,3 @@ class HomeScreenView extends StatelessWidget {
     );
   }
 }
-
-class veri {
-  void checkUpdate() {
-    print('yazdır');
-  }
-}
