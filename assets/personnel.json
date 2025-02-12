@@ -1,32 +1,25 @@
 [
     {
-        "name": "Ali Yılmaz",
-        "email": "ali@example.com",
-        "password": "123456",
-        "position": "Yazılım Geliştirici"
+      "id": 1,
+      "name": "Ahmet Yılmaz",
+      "email": "ahmet@company.com",
+      "password": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce58b",
+      "phone": "+905551112233",
+      "role": "personel",
+      "assigned_customers": ["mehmet@gmail.com"],
+      "total_investment": 15000,
+      "created_at": "2025-02-10T12:00:00Z"
     },
     {
-        "name": "Zeynep Arslan",
-        "email": "zeynep@example.com",
-        "password": "654321",
-        "position": "Proje Yöneticisi"
-    },
-    {
-        "name": "Burak Şahin",
-        "email": "burak@example.com",
-        "password": "abcdef",
-        "position": "Sistem Mühendisi"
-    },
-    {
-        "name": "Deniz Aksoy",
-        "email": "deniz@example.com",
-        "password": "pass123",
-        "position": "UI/UX Tasarımcısı"
-    },
-    {
-        "name": "Selin Güneş",
-        "email": "selin@example.com",
-        "password": "admin789",
-        "position": "İK Yöneticisi"
+      "id": 2,
+      "name": "Zeynep Kaya",
+      "email": "zeynep@company.com",
+      "password": "2c26b46b68ffc68ff99b453c1d304134134134b1f2e2719c",
+      "phone": "+905552223344",
+      "role": "personel",
+      "assigned_customers": ["elif@gmail.com"],
+      "total_investment": 0,
+      "created_at": "2025-02-11T15:45:00Z"
     }
 ]
+  

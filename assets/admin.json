@@ -1,17 +1,23 @@
 [
     {
-        "name": "admin",
-        "email": "admin@admin.com",
-        "password": "admin"
+        "name": "Süper Admin",
+        "email": "admin1@example.com",
+        "password": "fae86c32c2279ee24311aa26074a6ac081cb4cc059d23870456df271960c3d2e96619ac37c13883483bf5763b43268f2bf62c75311528814e7a0844ef9b68d81",
+        "role": "admin",
+        "created_at": "2025-02-12T05:04:24.406388"
     },
     {
-        "name": "admin2",
-        "email": "admin2@admin.com",
-        "password": "admin2"
+        "name": "İkinci Admin",
+        "email": "admin2@example.com",
+        "password": "964a5502faec7a27f63ab5f7bddbe1bd8a685616a90ffcba633b5ad404569bd8fed4693cc00474a4881f636f3831a3e5a36bda049c568a89cfe54b1285b0c13e",
+        "role": "admin",
+        "created_at": "2025-02-12T05:04:24.408388"
     },
     {
-        "name": "admin",
-        "email": "admin3@admin.com",
-        "password": "admin3"
+        "name": "Üçüncü Admin",
+        "email": "admin3@example.com",
+        "password": "fd12db3cdca4a57ec9a977794fda8fcc3eec6181568bd193082abdda74e5d2f26063b9351b85080879e105975cefd700a3a72d39b45a01d79cbc50d6d3d4dc39",
+        "role": "admin",
+        "created_at": "2025-02-12T05:04:24.408388"
     }
 ]
