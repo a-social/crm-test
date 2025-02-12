@@ -31,7 +31,7 @@ void main() {
     }
   ];
 
-  File adminFile = File("assets/admin.json");
+  File adminFile = File("assets/personnel.json");
   adminFile.writeAsStringSync(jsonEncode(admins), mode: FileMode.write);
   print("✅ SHA-512 ile hashlenmiş admin.json dosyası oluşturuldu.");
 }

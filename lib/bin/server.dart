@@ -105,38 +105,88 @@ void main() async {
         headers: {'Content-Type': 'application/json'});
   });
 
-  // 📌 Kullanıcı Login
+  // 📌 Personel Login
   router.post('/login', (Request request) async {
-    final payload = await request.readAsString();
-    final Map<String, dynamic> data = jsonDecode(payload);
-    final String email = data['email'];
-    final String password = data['password'];
+    try {
+      final payload = await request.readAsString();
+      final Map<String, dynamic> data = jsonDecode(payload);
 
-    final List<dynamic> personnelList =
-        jsonDecode(await personnelFile.readAsString());
+      // 📌 E-posta ve şifre kontrolü
+      if (!data.containsKey('email') || !data.containsKey('password')) {
+        return Response.badRequest(
+            body: jsonEncode({"error": "Email ve şifre zorunludur"}));
+      }
 
-    final person = personnelList.firstWhere(
-        (p) => p['email'] == email && p['password'] == hashPassword(password),
-        orElse: () => null);
+      final String email = data['email'];
+      final String password = data['password'];
 
-    if (person == null) {
-      return Response.forbidden(
-          jsonEncode({"error": "Geçersiz email veya şifre"}));
+      // 📌 personnel.json dosyasını oku
+      if (!personnelFile.existsSync()) {
+        return Response.internalServerError(
+            body: jsonEncode({"error": "personnel.json bulunamadı!"}));
+      }
+
+      final String fileContent = await personnelFile.readAsString();
+      if (fileContent.isEmpty) {
+        return Response.internalServerError(
+            body: jsonEncode({"error": "personnel.json boş!"}));
+      }
+
+      List<dynamic> personnelList;
+      try {
+        personnelList = jsonDecode(fileContent);
+      } catch (e) {
+        return Response.internalServerError(
+            body: jsonEncode({"error": "personnel.json bozuk!"}));
+      }
+
+      // 📌 Kullanıcıyı bul ve şifreyi karşılaştır
+      List<dynamic> foundUsers = personnelList
+          .where((p) =>
+              p['email'] == email && p['password'] == hashPassword(password))
+          .toList();
+
+      if (foundUsers.isEmpty) {
+        return Response.forbidden(
+            jsonEncode({"error": "Geçersiz email veya şifre"}));
+      }
+
+      // 📌 Token oluştur
+      final String token = generateJWT(email, "personel");
+
+      return Response.ok(jsonEncode({"token": token}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({"error": "Sunucu hatası: ${e.toString()}"}));
     }
-
-    final String token = generateJWT(email, "personel");
-
-    return Response.ok(jsonEncode({"token": token}),
-        headers: {'Content-Type': 'application/json'});
   });
 
   // 📌 Tüm Kullanıcıları Listeleme
   router.get('/users', (Request request) async {
     final token = request.headers['Authorization'];
-    if (token == null || !verifyJWT(token)) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
+
+    if (token == null) {
+      print("⛔ HATA: Token bulunamadı!");
+      return Response.forbidden(
+          jsonEncode({"error": "Yetkisiz işlem - Token Eksik"}));
     }
 
+    final tokenValue = token.replaceFirst('Bearer ', '').trim();
+
+    if (!verifyJWT(tokenValue)) {
+      print("⛔ HATA: Token doğrulaması başarısız oldu!");
+      return Response.forbidden(
+          jsonEncode({"error": "Yetkisiz işlem - Token Geçersiz"}));
+    }
+
+    if (!isAdmin(tokenValue)) {
+      print("⛔ HATA: Kullanıcı admin değil!");
+      return Response.forbidden(
+          jsonEncode({"error": "Bu işlem için yetkiniz yok"}));
+    }
+
+    print("✅ Başarılı: Admin yetkisi doğrulandı!");
     final jsonData = jsonDecode(await usersFile.readAsString());
     return Response.ok(jsonEncode(jsonData),
         headers: {'Content-Type': 'application/json'});
@@ -145,30 +195,78 @@ void main() async {
   // 📌 Yeni Kullanıcı Ekleme
   router.post('/add-user', (Request request) async {
     final token = request.headers['Authorization'];
-    if (token == null || !verifyJWT(token)) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
+
+    if (token == null) {
+      print("⛔ HATA: Token bulunamadı!");
+      return Response.forbidden(
+          jsonEncode({"error": "Yetkisiz işlem - Token Eksik"}));
     }
+
+    final tokenValue = token.replaceFirst('Bearer ', '').trim();
+
+    if (!verifyJWT(tokenValue)) {
+      print("⛔ HATA: Token doğrulaması başarısız oldu!");
+      return Response.forbidden(
+          jsonEncode({"error": "Yetkisiz işlem - Token Geçersiz"}));
+    }
+
+    if (!isAdmin(tokenValue)) {
+      print("⛔ HATA: Kullanıcı admin değil!");
+      return Response.forbidden(
+          jsonEncode({"error": "Bu işlem için yetkiniz yok"}));
+    }
+
+    print("✅ Başarılı: Admin yetkisi doğrulandı!");
 
     final payload = await request.readAsString();
-    final data = jsonDecode(payload);
+    final Map<String, dynamic> data = jsonDecode(payload);
 
+    // 📌 Gerekli Alanları Kontrol Et
     if (!data.containsKey('name') ||
         !data.containsKey('email') ||
-        !data.containsKey('password')) {
-      return Response(400, body: 'Eksik alanlar: name, email, password');
+        !data.containsKey('phone') ||
+        !data.containsKey('assigned_to')) {
+      print("⛔ HATA: Eksik alanlar tespit edildi!");
+      return Response(400,
+          body: jsonEncode(
+              {"error": "Eksik alanlar: name, email, phone, assigned_to"}));
     }
 
-    data['password'] = hashPassword(data['password']);
+    print("✅ Yeni kullanıcı ekleniyor: ${data['email']}");
 
     List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-    userList.add(data);
+
+    // 📌 Yeni Kullanıcıyı JSON Formatına Uygun Olarak Ekle
+    Map<String, dynamic> newUser = {
+      "id": userList.isNotEmpty
+          ? (userList.last['id'] ?? 100) + 1
+          : 101, // Yeni ID oluştur
+      "name": data["name"],
+      "email": data["email"],
+      "phone": data["phone"],
+      "trade_status": data["trade_status"] ?? false,
+      "investment_status": data["investment_status"] ?? false,
+      "investment_amount": data["investment_amount"] ?? 0,
+      "assigned_to": data["assigned_to"],
+      "call_duration": data["call_duration"] ?? 0,
+      "phone_status": data["phone_status"] ?? "Bilinmiyor",
+      "previous_investment": data["previous_investment"] ?? false,
+      "expected_investment_date": data["expected_investment_date"] ?? null,
+      "created_at": DateTime.now().toIso8601String(),
+    };
+
+    userList.add(newUser);
 
     await usersFile.writeAsString(jsonEncode(userList));
 
     logAction("Yeni kullanıcı eklendi: ${data['name']} (${data['email']})");
 
     return Response.ok(
-        jsonEncode({"status": "success", "message": "Kullanıcı eklendi"}),
+        jsonEncode({
+          "status": "success",
+          "message": "Kullanıcı eklendi",
+          "user": newUser
+        }),
         headers: {'Content-Type': 'application/json'});
   });
 

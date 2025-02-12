@@ -1,25 +1,24 @@
 [
     {
-      "id": 1,
-      "name": "Ahmet Yılmaz",
-      "email": "ahmet@company.com",
-      "password": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce58b",
-      "phone": "+905551112233",
-      "role": "personel",
-      "assigned_customers": ["mehmet@gmail.com"],
-      "total_investment": 15000,
-      "created_at": "2025-02-10T12:00:00Z"
+        "id": 1,
+        "name": "Kenan Yılmaz",
+        "email": "Kenan@company.com",
+        "password": "1780dbc80cae4cb6299abcda7b04e5d5e01b2f24a8dba9d0aa57b3f2c7bca86f94c0623fe1048467d5da97badfcf96538a31455281dc0a7151d5768af40cbdea",
+        "phone": "+905416523652",
+        "role": "personel",
+        "assigned_customers": [],
+        "total_investment": 0,
+        "created_at": "2025-02-12T06:44:33.405298"
     },
     {
-      "id": 2,
-      "name": "Zeynep Kaya",
-      "email": "zeynep@company.com",
-      "password": "2c26b46b68ffc68ff99b453c1d304134134134b1f2e2719c",
-      "phone": "+905552223344",
-      "role": "personel",
-      "assigned_customers": ["elif@gmail.com"],
-      "total_investment": 0,
-      "created_at": "2025-02-11T15:45:00Z"
+        "id": 2,
+        "name": "Ekrem Yılmaz",
+        "email": "erkem@company.com",
+        "password": "8a703527171465bd0ae60d8dc13123f11de6ffb60a1bf86a572946310b4b1cd34968207e165840ab4e8dce763cc9a8aee9cd38921c60998d9bcf5506153e86b4",
+        "phone": "+905416523652",
+        "role": "personel",
+        "assigned_customers": [],
+        "total_investment": 0,
+        "created_at": "2025-02-12T06:44:33.405298"
     }
 ]
-  
