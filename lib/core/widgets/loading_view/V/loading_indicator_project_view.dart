@@ -8,8 +8,8 @@ class LoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Visibility(
       visible: loading_value,
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.8),
+      child: SizedBox(
+        // color: Colors.black.withValues(alpha: 0.8),
         height: MediaQuery.sizeOf(context).height,
         width: MediaQuery.sizeOf(context).width,
         child: Center(child: CircularProgressIndicator()),

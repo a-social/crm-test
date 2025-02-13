@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import 'package:crm_k/core/models/admin_model/admin_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AdminService {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080'));
@@ -17,5 +22,32 @@ class AdminService {
       print('Failed to fetch admin data: $e');
     }
     return null;
+  }
+}
+
+class AdminProvider extends ChangeNotifier {
+  AdminModel? _admin;
+
+  AdminModel? get admin => _admin;
+
+  Future<void> fetchAdmin(String email) async {
+    try {
+      String jsonString = await rootBundle.loadString('assets/admin.json');
+      List<dynamic> jsonData = json.decode(jsonString);
+
+      var foundAdmin = jsonData.firstWhere(
+        (admin) => admin['email'] == email,
+        orElse: () => null,
+      );
+
+      if (foundAdmin != null) {
+        _admin = AdminModel.fromJson(foundAdmin);
+        notifyListeners(); // UI'yi güncelle
+      } else {
+        _admin = null; // Eğer admin bulunmazsa temizle
+      }
+    } catch (e) {
+      print("Admin verisi yüklenirken hata oluştu: $e");
+    }
   }
 }

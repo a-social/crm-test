@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _isLoading = true; // Loading ekranını aç
                       });
 
-                      bool success = await loginVM.checkMailAndPassword(
+                      bool success = await loginVM.loginPersonnel(
                         _emailController.text.trim(),
                         _passwordController.text.trim(),
                       );
@@ -107,8 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       }
-
-                      await Future.delayed(Duration(seconds: 2));
 
                       setState(() {
                         _isLoading = false; // Loading ekranını kapat
