@@ -2,7 +2,7 @@ import 'package:crm_k/core/icons/unit_icons.dart';
 import 'package:crm_k/core/lang/unit_strings.dart';
 import 'package:crm_k/core/widgets/loading_view/V/loading_indicator_project_view.dart';
 import 'package:crm_k/screens/home_screen/V/home_screen_view.dart';
-import 'package:crm_k/screens/login_screen/VM/login_screen_viewmodule.dart';
+import 'package:crm_k/screens/login_screen/normal_login/VM/login_screen_viewmodule.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

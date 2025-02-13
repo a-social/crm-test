@@ -1,5 +1,8 @@
+import 'package:crm_k/screens/admin/add_person/V/admin_add_person.dart';
 import 'package:crm_k/screens/dashboard/V/dashboard_view.dart';
+import 'package:crm_k/screens/dashboard/V/middle/V/middle_view.dart';
 import 'package:crm_k/screens/home_screen/V/home2.dart';
+import 'package:crm_k/screens/login_screen/admin_login/V/admin_login_view.dart';
 import 'package:crm_k/screens/viewtest/view_test.dart';
 import 'package:crm_k/test_main.dart';
 import 'package:flutter/material.dart';
@@ -13,8 +16,9 @@ class DrawerViewModel {
     "Raporlar": {Icons.bar_chart: DashboardScreen()},
     "test": {Icons.call: TestView()},
     "test2": {Icons.call: TestAppState()},
-    "Mesajlar": {Icons.message: DashboardScreen()},
-    "Bildirimler": {Icons.notifications: DashboardScreen()},
+    "list": {Icons.list: UserListScreenView()},
+    "Personel Ekleme": {Icons.list: PersonnelAddScreen()},
+    "adminlogin": {Icons.notifications: AdminLogin()},
     "Görevler": {Icons.check_circle: DashboardScreen()},
     "Takvim": {Icons.calendar_today: DashboardScreen()},
     "Dosyalar": {Icons.folder: DashboardScreen()},
