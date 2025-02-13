@@ -1,4 +1,5 @@
 import 'package:crm_k/core/service/admin_service.dart';
+import 'package:crm_k/screens/404/V/404.dart';
 import 'package:crm_k/screens/admin/add_person/VM/admin_add_person_viewmodule.dart';
 import 'package:crm_k/screens/dashboard/V/right_panel/V/right_panel_view.dart';
 import 'package:crm_k/screens/login_screen/admin_login/V/admin_login_view.dart';
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
           // '/' : (context) => AuthChecker(),
           '/admin-login-view': (context) => const AdminLogin(),
           '/home': (context) => const HomeScreenView(),
+          '/404': (context) => PageNotFoundScreen()
         },
       ),
     );

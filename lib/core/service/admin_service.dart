@@ -32,6 +32,7 @@ class AdminProvider extends ChangeNotifier {
 
   Future<void> fetchAdmin(String email) async {
     try {
+      //şimdilik localde çalışıyor sonrasında databaseden gelen veri üzerine çalışılacak
       String jsonString = await rootBundle.loadString('assets/admin.json');
       List<dynamic> jsonData = json.decode(jsonString);
 
