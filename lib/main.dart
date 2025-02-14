@@ -52,6 +52,8 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
         ),
         initialRoute: '/login-view',
+        onUnknownRoute: (settings) =>
+            MaterialPageRoute(builder: (context) => PageNotFoundScreen()),
         routes: {
           // '/' : (context) => AuthChecker(),
           '/admin-login-view': (context) => const AdminLogin(),

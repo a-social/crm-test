@@ -191,7 +191,7 @@ class UserListScreenView extends StatefulWidget {
 
 class _UserListScreenViewState extends State<UserListScreenView> {
   late Future<List<User>> _usersFuture;
-  bool isApi = false; // Varsayılan olarak API'den veri çekecek
+  bool isApi = true; // Varsayılan olarak API'den veri çekecek
 
   @override
   void initState() {
@@ -200,9 +200,8 @@ class _UserListScreenViewState extends State<UserListScreenView> {
   }
 
   void _fetchUsers() {
-    _usersFuture = isApi
-        ? UserManagerTest.fetchUsersFromApi() // API'den çek
-        : UserManagerTest.fetchUsersFromJson(); // JSON'dan çek
+    _usersFuture = UserManagerTest.fetchUsersFromApi(context); // API'den çek
+
     setState(() {}); // Sayfayı güncelle
   }
 

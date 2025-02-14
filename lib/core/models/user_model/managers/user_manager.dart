@@ -43,22 +43,52 @@ class UserManager with ChangeNotifier {
       );
     }
   }
+
+  Future<void> updateUser(User user) async {
+    try {
+      Response response = await _dio.put(
+        "/update-user/${user.email}",
+        data: jsonEncode(user.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        notifyListeners();
+      } else {
+        throw Exception(
+            "Kullanıcı güncellenirken hata oluştu: ${response.data}");
+      }
+    } catch (e) {
+      throw Exception("İstek sırasında hata oluştu: $e");
+    }
+  }
 }
 
 class UserManagerTest {
-  static const String apiBase = "https://reqres.in";
+  static const String apiBase = "http://localhost:8080";
 
   /// ReqRes API’den kullanıcıları çeker.
-  static Future<List<User>> fetchUsersFromApi() async {
-    final response = await http.get(Uri.parse("$apiBase/api/users?page=2"));
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body)['data'];
+  /// 📌 **Tüm Kullanıcıları API'den Çekme (Provider ile Token Kullanıyor)**
+  static Future<List<User>> fetchUsersFromApi(BuildContext context) async {
+    final String? token =
+        Provider.of<AdminProvider>(context, listen: false).token;
 
-      // Null değerleri filtrele
-      return jsonData
-          .where((user) => user['email'] != null && user['first_name'] != null)
-          .map<User>((user) => User.fromJson(user))
-          .toList();
+    if (token == null) {
+      throw Exception("Yetkisiz işlem: Token bulunamadı!");
+    }
+
+    final response = await http.get(
+      Uri.parse("$apiBase/users"),
+      headers: {
+        "Authorization": "Bearer $token", // ✅ Token direkt Provider'dan çekildi
+        "Content-Type": "application/json",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.map<User>((user) => User.fromJson(user)).toList();
+    } else if (response.statusCode == 403) {
+      throw Exception("Yetkisiz işlem: Admin yetkisi gerekli!");
     } else {
       throw Exception("API'den veri alınamadı: ${response.statusCode}");
     }

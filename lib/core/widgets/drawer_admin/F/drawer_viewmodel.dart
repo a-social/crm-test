@@ -1,7 +1,7 @@
 import 'package:crm_k/screens/admin/add_person/V/admin_add_person.dart';
 import 'package:crm_k/screens/admin/add_user/V/add_user.dart';
 import 'package:crm_k/screens/admin/dashboard/V/dashboard_view.dart';
-import 'package:crm_k/screens/admin/delete_person/V/delete_user.dart';
+import 'package:crm_k/screens/admin/delete_user/V/delete_user.dart';
 import 'package:flutter/material.dart';
 
 class DynamicDrawerVMAdmin {

@@ -194,9 +194,9 @@ class _UserListScreenViewState extends State<UserListScreenView> {
   }
 
   void _fetchUsers() {
-    _usersFuture = isApi
-        ? UserManagerTest.fetchUsersFromApi() // API'den çek
-        : UserManagerTest.fetchUsersFromJson(); // JSON'dan çek
+    _usersFuture = UserManagerTest.fetchUsersFromJson();
+    // ? UserManagerTest.fetchUsersFromApi() // API'den çek
+    // JSON'dan çek
     setState(() {}); // Sayfayı güncelle
   }
 
