@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
+import 'package:flutter/services.dart';
 
 class PersonnelManager {
   final List<PersonnelModel> _personnelList = [];
@@ -33,5 +36,21 @@ class PersonnelManager {
       }
     }
     print('Personnel with ID $id not found.');
+  }
+}
+
+class PersonelTestManager {
+  static Future<List<PersonnelModel>> fetchUsersFromJson() async {
+    try {
+      String jsonString = await rootBundle.loadString('assets/personnel.json');
+      List<dynamic> jsonData = json.decode(jsonString);
+
+      return jsonData
+          .where((user) => user['email'] != null && user['name'] != null)
+          .map<PersonnelModel>((user) => PersonnelModel.fromJson(user))
+          .toList();
+    } catch (e) {
+      throw Exception("JSON verisi yüklenirken hata oluştu: $e");
+    }
   }
 }

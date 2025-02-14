@@ -1,0 +1,89 @@
+import 'package:crm_k/core/service/personel_service.dart';
+import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_detail.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+class RightPanelPersonnelView extends StatelessWidget {
+  const RightPanelPersonnelView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final personnel =
+        Provider.of<PersonelProviderSelect>(context).selectedPersonel;
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon:
+                  const Icon(Icons.open_in_full, size: 30, color: Colors.blue),
+              onPressed: () {
+                if (personnel != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PersonelDetailViewPage(personnel: personnel),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          Center(
+            child: Hero(
+              tag: 'profile_pic_${personnel?.email}',
+              child: CircleAvatar(radius: 40, backgroundColor: Colors.blue),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Column(
+              children: [
+                Hero(
+                  tag: 'personnel_name_${personnel?.email}',
+                  child: Text(
+                    personnel != null ? personnel.name : "Personel Seçiniz",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Hero(
+                  tag: 'personnel_email_${personnel?.email}',
+                  child: Text(
+                    personnel != null ? personnel.email : "@example.com",
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(),
+          _buildTextTile("Telefon", personnel?.phone ?? "Bilinmiyor"),
+          _buildTextTile("Rol", personnel?.role ?? "Tanımsız"),
+          _buildTextTile("Atanan Müşteriler",
+              personnel?.assignedCustomers.length.toString() ?? "0"),
+          _buildTextTile(
+              "Toplam Yatırım", "${personnel?.totalInvestment ?? 0} ₺"),
+          _buildTextTile("Oluşturulma Tarihi",
+              personnel?.createdAt.toString().split(" ")[0] ?? "Bilinmiyor"),
+          const SizedBox(height: 10),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextTile(String title, String value) {
+    return ListTile(
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(value),
+    );
+  }
+}

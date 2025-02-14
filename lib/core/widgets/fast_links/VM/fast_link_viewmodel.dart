@@ -3,7 +3,7 @@ import 'package:crm_k/core/lang/unit_strings.dart';
 import 'package:crm_k/core/widgets/fast_links/items/add_new_user_record/V/add_new_user_record_vew.dart';
 import 'package:flutter/material.dart';
 
-import 'package:crm_k/screens/dashboard/V/dashboard_view.dart';
+import 'package:crm_k/screens/admin/dashboard/V/dashboard_view.dart';
 
 class FastLinkMenuITems {
   static final Map<String, Map<Icon, Widget>> menuItems = {

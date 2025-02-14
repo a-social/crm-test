@@ -77,7 +77,7 @@ class _PageNotFoundScreenState extends State<PageNotFoundScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
-                    context, '/home', (route) => false);
+                    context, '/login-view', (route) => false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,

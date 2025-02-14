@@ -1,13 +1,9 @@
-import 'package:crm_k/screens/admin/add_person/V/admin_add_person.dart';
 import 'package:crm_k/screens/admin/dashboard/V/dashboard_view.dart';
-import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
 import 'package:crm_k/screens/admin/home_screen/V/home2.dart';
-import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
 import 'package:crm_k/screens/viewtest/view_test.dart';
-import 'package:crm_k/test_main.dart';
 import 'package:flutter/material.dart';
 
-class DrawerViewModel {
+class RightPanelViewmodel {
   static final Map<String, Map<IconData, Widget>> menuItems = {
     "Ana Sayfa": {Icons.dashboard: DashboardScreen()},
     "Profil": {Icons.person: UserListScreen()},
@@ -15,10 +11,8 @@ class DrawerViewModel {
     "Müşteriler": {Icons.group: CustomerListScreen()},
     "Raporlar": {Icons.bar_chart: DashboardScreen()},
     "test": {Icons.call: TestView()},
-    "test2": {Icons.call: TestAppState()},
-    "list": {Icons.list: UserListScreenView()},
-    "Personel Ekleme": {Icons.list: PersonnelAddScreen()},
-    "adminlogin": {Icons.notifications: AdminLogin()},
+    "Mesajlar": {Icons.message: DashboardScreen()},
+    "Bildirimler": {Icons.notifications: DashboardScreen()},
     "Görevler": {Icons.check_circle: DashboardScreen()},
     "Takvim": {Icons.calendar_today: DashboardScreen()},
     "Dosyalar": {Icons.folder: DashboardScreen()},
