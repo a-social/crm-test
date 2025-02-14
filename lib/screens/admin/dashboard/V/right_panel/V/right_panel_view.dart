@@ -12,7 +12,6 @@ class RightPanelUserView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).selectedUser;
-    final personel = Provider.of<PersonelProviderSelect>(context).selectUser;
 
     return Container(
       color: Colors.white,
@@ -101,6 +100,7 @@ class RightPanelUserView extends StatelessWidget {
   }
 }
 
+
 //yerini değiştirmeyi unutma
 class UserProvider extends ChangeNotifier {
   User? _selectedUser;
@@ -112,3 +112,4 @@ class UserProvider extends ChangeNotifier {
     notifyListeners(); // Sağ panelin güncellenmesi için haber ver
   }
 }
+

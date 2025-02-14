@@ -3,3 +3,8 @@
 [2025-02-12 06:10:18.904722] Yeni kullanıcı eklendi: Çılgın Şaziye (şazziye@gazino.com)
 [2025-02-12 06:10:21.486484] Yeni kullanıcı eklendi: Çılgın Şaziye (şazziye@gazino.com)
 [2025-02-12 06:10:23.163611] Yeni kullanıcı eklendi: Çılgın Şaziye (şazziye@gazino.com)
+[2025-02-14 11:37:47.756141] Yeni kullanıcı eklendi: ufuk sancar (admin1@example.com)
+[2025-02-14 11:38:05.028372] Yeni kullanıcı eklendi: samet sancar (admin1@example.com)
+[2025-02-14 12:06:50.037151] Yeni kullanıcı eklendi: asas (salaka@gmail.com)
+[2025-02-14 12:16:29.852865] Yeni kullanıcı eklendi: asas (asas@gmail.com)
+[2025-02-14 12:37:28.265828] Yeni kullanıcı eklendi: sıla (sıla@gmail.com)

@@ -2,6 +2,7 @@ import 'package:crm_k/core/service/admin_service.dart';
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/screens/404/V/404.dart';
 import 'package:crm_k/screens/admin/add_person/VM/admin_add_person_viewmodule.dart';
+import 'package:crm_k/screens/admin/add_user/VM/add_user_vm.dart';
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
 import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/V/login_screen_view.dart';
@@ -28,10 +29,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoadingProvider()),
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => AdminService()),
         ChangeNotifierProvider(create: (_) => PersonnelProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => UserAddViewModel()),
         ChangeNotifierProvider(create: (_) => PersonnelAddViewModel()),
         ChangeNotifierProvider(create: (_) => PersonelProviderSelect()),
+        ChangeNotifierProvider(create: (_) => PersonelService()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -49,6 +53,7 @@ class MyApp extends StatelessWidget {
         routes: {
           // '/' : (context) => AuthChecker(),
           '/admin-login-view': (context) => const AdminLogin(),
+          '/admin-dashboard': (context) => const HomeScreenView(),
           '/home': (context) => const HomeScreenView(),
           '/login-view': (context) => LoginScreen(),
           '/404': (context) => PageNotFoundScreen()

@@ -20,5 +20,16 @@
         "assigned_customers": [],
         "total_investment": 0,
         "created_at": "2025-02-12T06:44:33.405298"
+    },
+    {
+        "id": 3,
+        "name": "İbrahim Yılmaz",
+        "email": "ibo@company.com",
+        "password": "1780dbc80cae4cb6299abcda7b04e5d5e01b2f24a8dba9d0aa57b3f2c7bca86f94c0623fe1048467d5da97badfcf96538a31455281dc0a7151d5768af40cbdea",
+        "phone": "+905416524578",
+        "role": "personel",
+        "assigned_customers": [],
+        "total_investment": 480,
+        "created_at": "2025-02-12T06:44:33.405298"
     }
 ]

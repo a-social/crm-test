@@ -1,10 +1,11 @@
+import 'package:crm_k/core/widgets/drawer_admin/F/drawer_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/widgets/drawer/F/drawer_viewmodel.dart';
 
-class DynamicDrawer extends StatelessWidget {
+class DynamicDrawerAdmin extends StatelessWidget {
   final Function(Widget) onMenuSelected;
 
-  const DynamicDrawer({super.key, required this.onMenuSelected});
+  const DynamicDrawerAdmin({super.key, required this.onMenuSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class DynamicDrawer extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              children: DrawerViewModel.menuItems.entries.map((entry) {
+              children: DynamicDrawerVMAdmin.menuItems.entries.map((entry) {
                 String title = entry.key;
                 IconData icon = entry.value.keys.first;
                 Widget page = entry.value.values.first;

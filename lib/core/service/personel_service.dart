@@ -43,37 +43,63 @@ class PersonelProviderSelect extends ChangeNotifier {
   }
 }
 
-class PersonelService {
+class PersonelService with ChangeNotifier {
   final StreamController<List<PersonnelModel>> _controller =
       StreamController<List<PersonnelModel>>.broadcast();
+
+  List<PersonnelModel> _personnelList = [];
 
   PersonelService() {
     _startStream();
   }
 
+  /// 🔹 **Eski Stream Metodu Kaldı** (UI'nin bozulmaması için)
   Stream<List<PersonnelModel>> getPersonnelStream() => _controller.stream;
 
+  /// 🔹 **Yeni Anlık Veri Metodu**
+  List<PersonnelModel> get currentPersonnelList => _personnelList;
+
+  /// 🔹 **Veriyi Güncelleyen Stream**
   void _startStream() async {
     while (true) {
       await Future.delayed(
-          const Duration(seconds: 5)); // 5 saniyede bir güncelle
+          const Duration(seconds: 1)); // 5 saniyede bir güncelle
 
       try {
         String jsonString =
             await rootBundle.loadString('assets/personnel.json');
         List<dynamic> jsonData = json.decode(jsonString);
 
-        List<PersonnelModel> personnelList =
+        _personnelList =
             jsonData.map((data) => PersonnelModel.fromJson(data)).toList();
 
-        _controller.add(personnelList); // Stream'e yeni veriyi gönder
+        _controller.add(_personnelList); // Stream'e yeni veriyi gönder
+        notifyListeners(); // UI'yi güncelle
       } catch (e) {
         _controller.addError("Veri yüklenirken hata oluştu: $e");
       }
     }
   }
 
+  /// 🔹 **En Çok Çalışan Personel (Atanan Müşteri Sayısına Göre)**
+  PersonnelModel? getMostActivePersonnel() {
+    if (_personnelList.isEmpty) return null;
+    _personnelList.sort((a, b) =>
+        b.assignedCustomers.length.compareTo(a.assignedCustomers.length));
+    return _personnelList.first;
+  }
+
+  /// 🔹 **Günün Personeli (Toplam Yatırım Miktarına Göre)**
+  PersonnelModel? getPersonnelOfTheDay() {
+    if (_personnelList.isEmpty) return null;
+    _personnelList
+        .sort((a, b) => b.totalInvestment.compareTo(a.totalInvestment));
+    return _personnelList.first;
+  }
+
+  @override
   void dispose() {
     _controller.close();
+    super.dispose();
   }
 }

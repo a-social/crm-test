@@ -251,7 +251,7 @@ void main() async {
       "call_duration": data["call_duration"] ?? 0,
       "phone_status": data["phone_status"] ?? "Bilinmiyor",
       "previous_investment": data["previous_investment"] ?? false,
-      "expected_investment_date": data["expected_investment_date"] ?? null,
+      "expected_investment_date": data["expected_investment_date"],
       "created_at": DateTime.now().toIso8601String(),
     };
 

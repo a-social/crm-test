@@ -1,4 +1,5 @@
 import 'package:crm_k/core/service/admin_service.dart';
+import 'package:crm_k/core/widgets/drawer_admin/V/drawer_view.dart';
 import 'package:crm_k/screens/404/V/404.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,7 +35,7 @@ class _HomeScreenViewState extends State<HomeScreenView> {
               child: const LiveClock())
         ],
       ),
-      drawer: DynamicDrawer(
+      drawer: DynamicDrawerAdmin(
         onMenuSelected: (Widget newPage) {
           setState(() {
             _selectedPage = newPage; // Yeni sayfa değiştirildi

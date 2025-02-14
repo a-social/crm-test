@@ -16,100 +16,109 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final admin = Provider.of<AdminProvider>(context).admin;
-    if (admin == null) {
-      Navigator.pushNamedAndRemoveUntil(context, '/404', (route) => false);
-      return SizedBox();
-    } else {
-      print(admin);
-      return Padding(
+    final personelService = Provider.of<PersonelService>(context);
+
+    return StreamBuilder<List<PersonnelModel>>(
+      stream: personelService.getPersonnelStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text("Hata: ${snapshot.error}"));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("Hiç personel bulunamadı."));
+        }
+
+        final List<PersonnelModel> personnelList = snapshot.data!;
+
+        // 🔹 **Yeni Servis Yapısını Kullanan Güncellenmiş İstatistikler**
+        final int totalPersonnel = personnelList.length;
+        final String topEmployee =
+            personelService.getMostActivePersonnel()?.name ?? "Bilinmiyor";
+        final String employeeOfTheDay =
+            personelService.getPersonnelOfTheDay()?.name ?? "Bilinmiyor";
+        final double totalInvestment =
+            personnelList.fold(0, (sum, p) => sum + p.totalInvestment);
+
+        return Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
                 child: Column(
-              children: [
-                Text1('Hoşgeldin ${admin.name}'),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: Card(
-                    child: Row(
-                      children: [
-                        // 📌 Solda StatBox'ları içeren genişleyebilir bir alan
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Bugün alınan yatırım",
-                                          value: "18",
-                                          subValue: "")),
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Personel Sayısı",
-                                          value: "1:42",
-                                          subValue: "")),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "En Çok Çalışan Personel",
-                                          value: "48",
-                                          subValue: "%8")),
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Günün Personeli",
-                                          value: "15",
-                                          subValue: "+12%")),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Placeholder for graph
-                              Flexible(
-                                  child: Padding(
-                                      padding: EdgeInsets.all(15),
-                                      child: Column(children: [
-                                        Expanded(child: PieChartSample3()),
-                                        SizedBox(height: 15),
-                                        Expanded(child: BarChartScreen()),
-                                      ]))),
-                            ],
-                          ),
-                        ),
-
-                        // 📌 Sağda Kullanıcı Listesi (Esnek Genişlik)
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            )),
-            SizedBox(
-              width: 30,
-            ),
-            Expanded(
-                child: Column(
-              children: [
-                const Text("Son Değişiklikler",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                Expanded(
-                    child: Column(
                   children: [
-                    Flexible(flex: 2, child: PersonelScreenViewState()),
-                    SizedBox.square(dimension: 5),
-                    Flexible(child: UserListScreenView()),
+                    const Text("Hoşgeldin, Admin"),
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: Card(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StatBox(
+                                    title: "Bugün Alınan Yatırım",
+                                    value:
+                                        "${totalInvestment.toStringAsFixed(2)} ₺",
+                                    subValue: "",
+                                  ),
+                                ),
+                                Expanded(
+                                  child: StatBox(
+                                    title: "Personel Sayısı",
+                                    value: "$totalPersonnel",
+                                    subValue: "",
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StatBox(
+                                    title: "En Çok Çalışan Personel",
+                                    value: topEmployee,
+                                    subValue: "",
+                                  ),
+                                ),
+                                Expanded(
+                                  child: StatBox(
+                                    title: "Günün Personeli",
+                                    value: employeeOfTheDay,
+                                    subValue: "",
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
-                ))
-              ],
-            )),
-          ]));
-    }
+                ),
+              ),
+              const SizedBox(width: 30),
+              Expanded(
+                child: Column(
+                  children: [
+                    const Text(
+                      "Personeller",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: const PersonelScreenViewState(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

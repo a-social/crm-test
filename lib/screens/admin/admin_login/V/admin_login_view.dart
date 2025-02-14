@@ -17,6 +17,7 @@ class _AdminLoginState extends State<AdminLogin> {
   final TextEditingController passwordController = TextEditingController();
   final AuthService authService = AuthService();
   bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -29,15 +30,17 @@ class _AdminLoginState extends State<AdminLogin> {
       isLoading = true;
     });
 
-    String? token =
-        await authService.login(emailController.text, passwordController.text);
+    String? token = await authService.login(
+      emailController.text,
+      passwordController.text,
+    );
 
     if (token != null) {
       var decodedToken = JwtDecoder.decode(token);
       final String email = decodedToken['sub'];
 
-      // 📌 Admin bilgilerini provider'a kaydet
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+      adminProvider.setToken(token); // 📌 Token'ı kaydet
       await adminProvider.fetchAdmin(email);
 
       Navigator.push(
