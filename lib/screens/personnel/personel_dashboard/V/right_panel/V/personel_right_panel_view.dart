@@ -1,6 +1,6 @@
 import 'package:crm_k/core/functions/global_functions.dart';
-import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:crm_k/core/widgets/fast_links/V/fast_link_view.dart';
+import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/personel_right_panel_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +10,7 @@ class PersonelRightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context, listen: false).selectedUser;
+    final user = Provider.of<UserProvider>(context).selectedUser;
     debugPrint('------------$user');
 
     return Container(
@@ -69,6 +69,7 @@ class PersonelRightPanel extends StatelessWidget {
           _buildInfoTile("Yatırım Durumu", user?.investmentStatus ?? false),
           _buildInfoTile(
               "Önceki Yatırım Var mı?", user?.previousInvestment ?? false),
+          //Umuta sor
           _buildInfoTile("Ticaret Durumu", user?.tradeStatus ?? false),
           _buildTextTile("Atanan Temsilci", user?.assignedTo ?? "Atama Yok"),
           _buildTextTile("Telefon Durumu", user?.phoneStatus ?? "Bilinmiyor"),
@@ -97,17 +98,5 @@ class PersonelRightPanel extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(value),
     );
-  }
-}
-
-//yerini değiştirmeyi unutma
-class UserProvider extends ChangeNotifier {
-  User? _selectedUser;
-
-  User? get selectedUser => _selectedUser;
-
-  void selectUser(User user) {
-    _selectedUser = user;
-    notifyListeners(); // Sağ panelin güncellenmesi için haber ver
   }
 }

@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class RightPanelPersonnelView extends StatelessWidget {
-  const RightPanelPersonnelView({super.key});
+  const RightPanelPersonnelView({super.key, this.isDelete = false});
+  final bool isDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +77,28 @@ class RightPanelPersonnelView extends StatelessWidget {
               personnel?.createdAt.toString().split(" ")[0] ?? "Bilinmiyor"),
           const SizedBox(height: 10),
           const Divider(),
-          Flexible(child: FastLinkView())
+
+          // 📌 **Silme Butonu**
+          isDelete
+              ? Center(
+                  child: ElevatedButton(
+                    onPressed: personnel != null
+                        ? () => _confirmDelete(context, personnel.email)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 12),
+                    ),
+                    child: const Text("Personeli Sil"),
+                  ),
+                )
+              : SizedBox.shrink(),
+
+          const SizedBox(height: 20),
+
+          Flexible(child: FastLinkView()),
         ],
       ),
     );
@@ -87,5 +109,46 @@ class RightPanelPersonnelView extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(value),
     );
+  }
+
+  /// **📌 Silme Onayı için Dialog**
+  void _confirmDelete(BuildContext context, String email) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Personeli Sil"),
+        content:
+            Text("$email adresli personeli silmek istediğinize emin misiniz?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("İptal"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deletePersonnel(context, email);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Evet, Sil"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// **📌 Personeli Silme İşlemi**
+  void _deletePersonnel(BuildContext context, String email) async {
+    try {
+      await Provider.of<PersonelService>(context, listen: false)
+          .deletePersonnel(context, email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Personel başarıyla silindi!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Hata oluştu: $e")),
+      );
+    }
   }
 }

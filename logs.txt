@@ -11,3 +11,4 @@
 [2025-02-14 15:55:50.646068] Yeni kullanıcı eklendi: Aslı Gürhan (asligurhan@gmail.com)
 [2025-02-14 16:03:58.174689] Yeni kullanıcı eklendi: Melek Vardar (melekvardar@gmail.com)
 [2025-02-14 16:06:29.898202] Yeni kullanıcı eklendi: Ahmet Vardar (ahmetvardar@gmail.com)
+[2025-02-14 16:43:19.945708] Yeni kullanıcı eklendi: SelamlarBenAdvar (selamlar@gmail.com)

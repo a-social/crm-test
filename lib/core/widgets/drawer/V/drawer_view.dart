@@ -24,11 +24,11 @@ class DynamicDrawer extends StatelessWidget {
             child: ListView(
               children: DrawerViewModel.menuItems.entries.map((entry) {
                 String title = entry.key;
-                IconData icon = entry.value.keys.first;
+                var icon = entry.value.keys.first;
                 Widget page = entry.value.values.first;
 
                 return ListTile(
-                  leading: Icon(icon),
+                  leading: icon,
                   title: Text(title),
                   onTap: () {
                     Navigator.pop(context); // Drawer'ı kapat

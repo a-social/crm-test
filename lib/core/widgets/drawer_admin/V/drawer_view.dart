@@ -12,7 +12,6 @@ class DynamicDrawerAdmin extends StatelessWidget {
       child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -27,13 +26,18 @@ class DynamicDrawerAdmin extends StatelessWidget {
                 IconData icon = entry.value.keys.first;
                 Widget page = entry.value.values.first;
 
-                return ListTile(
-                  leading: Icon(icon),
-                  title: Text(title),
-                  onTap: () {
-                    Navigator.pop(context); // Drawer'ı kapat
-                    onMenuSelected(page); // Yeni sayfayı yükle
-                  },
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(icon),
+                      title: Text(title),
+                      onTap: () {
+                        Navigator.pop(context); // Drawer'ı kapat
+                        onMenuSelected(page); // Yeni sayfayı yükle
+                      },
+                    ),
+                    Divider()
+                  ],
                 );
               }).toList(),
             ),
