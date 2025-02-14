@@ -1,6 +1,5 @@
 import 'package:crm_k/core/widgets/drawer_admin/F/drawer_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_k/core/widgets/drawer/F/drawer_viewmodel.dart';
 
 class DynamicDrawerAdmin extends StatelessWidget {
   final Function(Widget) onMenuSelected;

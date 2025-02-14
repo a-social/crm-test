@@ -1,5 +1,4 @@
 import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
-import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view_for_personel.dart';
 import 'package:flutter/material.dart';
 

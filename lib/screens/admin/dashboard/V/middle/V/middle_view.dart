@@ -1,12 +1,9 @@
 // ANA İÇERİK
-import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
-import 'package:crm_k/core/service/admin_service.dart';
 import 'package:crm_k/core/service/personel_service.dart';
-import 'package:crm_k/core/texts/unit_text.dart';
-import 'package:crm_k/screens/admin/dashboard/V/middle/graphics_view.dart';
+
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
