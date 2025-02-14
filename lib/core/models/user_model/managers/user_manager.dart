@@ -1,53 +1,46 @@
 import 'dart:convert';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'package:crm_k/core/service/admin_service.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-class UserManager {
-  static const String apiBase = "http://localhost:8080/admin";
+class UserManager with ChangeNotifier {
+  final Dio _dio = Dio(BaseOptions(baseUrl: "http://localhost:8080"));
 
-  /// Kullanıcıları API’den çeker.
-  static Future<List<User>> fetchUsers() async {
-    final response = await http.get(Uri.parse("$apiBase/users"));
-    if (response.statusCode == 200) {
-      List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map<User>((user) => User.fromJson(user)).toList();
-    } else {
-      throw Exception("Veri alınamadı: ${response.statusCode}");
+  /// **Kullanıcı Silme İşlemi**
+  Future<void> deleteUser(String email, BuildContext context) async {
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    final token = adminProvider.token;
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Yetkisiz işlem: Token bulunamadı!")),
+      );
+      return;
     }
-  }
 
-  /// JSON dosyasından kullanıcıları çeker.
-  static Future<List<User>> fetchUsersFromJson() async {
     try {
-      String jsonString = await rootBundle.loadString('assets/personnel.json');
-      List<dynamic> jsonData = json.decode(jsonString);
+      Response response = await _dio.delete(
+        "/delete-user/$email",
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+      debugPrint('------------$token');
 
-      return jsonData.map<User>((user) => User.fromJson(user)).toList();
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Kullanıcı başarıyla silindi!")),
+        );
+        notifyListeners();
+      } else {
+        throw Exception("Silme işlemi başarısız: ${response.data}");
+      }
     } catch (e) {
-      throw Exception("JSON verisi yüklenirken hata oluştu: $e");
-    }
-  }
-
-  /// Kullanıcı ekler.
-  static Future<void> addUser(String name, String email) async {
-    final response = await http.post(
-      Uri.parse("$apiBase/add-user"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"name": name, "email": email}),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Kullanıcı eklenemedi: ${response.statusCode}");
-    }
-  }
-
-  /// Kullanıcıyı siler.
-  static Future<void> deleteUser(int id) async {
-    final response = await http.delete(Uri.parse("$apiBase/delete-user/$id"));
-
-    if (response.statusCode != 200) {
-      throw Exception("Kullanıcı silinemedi: ${response.statusCode}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠ Hata oluştu: $e")),
+      );
     }
   }
 }

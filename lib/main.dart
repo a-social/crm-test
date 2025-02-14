@@ -1,3 +1,4 @@
+import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/service/admin_service.dart';
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/screens/404/V/404.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PersonnelAddViewModel()),
         ChangeNotifierProvider(create: (_) => PersonelProviderSelect()),
         ChangeNotifierProvider(create: (_) => PersonelService()),
+        ChangeNotifierProvider(create: (_) => UserManager()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

@@ -1,4 +1,5 @@
 import 'package:crm_k/core/functions/global_functions.dart';
+import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_detail.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,8 @@ import 'package:crm_k/core/widgets/fast_links/V/fast_link_view.dart';
 import 'package:provider/provider.dart';
 
 class RightPanelUserView extends StatelessWidget {
-  const RightPanelUserView({super.key});
+  const RightPanelUserView({super.key, this.isDelete = false});
+  final bool isDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +29,7 @@ class RightPanelUserView extends StatelessWidget {
                 if (user != null) {
                   Navigator.push(
                     context,
-                    ExpandPageRoute(
-                        page: UserDetailPage(
-                            user: user)), // 🔥 Özel animasyonla aç
+                    ExpandPageRoute(page: UserDetailPage(user: user)),
                   );
                 }
               },
@@ -75,8 +75,61 @@ class RightPanelUserView extends StatelessWidget {
               "Son Görüşme Süresi", "${user?.callDuration ?? 0} dakika"),
           _buildTextTile("Yatırım Tutarı", "${user?.investmentAmount ?? 0} ₺"),
           const SizedBox(height: 10),
-          Divider(),
-          Expanded(child: FastLinkView()),
+          const Divider(),
+          if (isDelete)
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _showDeleteConfirmation(context, user),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text("Kullanıcıyı Sil"),
+              ),
+            )
+          else
+            Expanded(child: FastLinkView()),
+        ],
+      ),
+    );
+  }
+
+  /// 📌 Kullanıcı Silme Onay Ekranı
+  void _showDeleteConfirmation(BuildContext context, User? user) {
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Kullanıcı Silme Onayı"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Ad: ${user.name}"),
+            Text("E-posta: ${user.email}"),
+            const SizedBox(height: 10),
+            const Text("Bu kullanıcıyı silmek istediğinize emin misiniz?",
+                style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("İptal"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await Provider.of<UserManager>(context, listen: false)
+                  .deleteUser(user.email, context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Evet, Sil"),
+          ),
         ],
       ),
     );
