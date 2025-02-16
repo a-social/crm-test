@@ -34,7 +34,7 @@ class _Test2ViewState extends State<Test2View> {
       callDuration: 194,
       phoneStatus: "Yatırımcı",
       previousInvestment: false,
-      expectedInvestmentDate: null,
+      expectedInvestmentDate: DateTime.parse("2025-08-26T15:40:41Z"),
       createdAt: DateTime.parse("2024-08-26T15:40:41Z"),
     );
   }

@@ -47,7 +47,9 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         navigatorKey: GlobalKey<NavigatorState>(),
-        theme: MaterialTheme(TextTheme.of(context)).light().copyWith(),
+        theme: MaterialTheme(TextTheme.of(context)).light().copyWith(
+              scaffoldBackgroundColor: ThemeData().cardColor,
+            ),
         initialRoute: '/login-view',
         onUnknownRoute: (settings) =>
             MaterialPageRoute(builder: (context) => PageNotFoundScreen()),

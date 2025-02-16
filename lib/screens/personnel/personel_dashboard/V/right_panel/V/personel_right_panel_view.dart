@@ -1,6 +1,7 @@
 import 'package:crm_k/core/functions/global_functions.dart';
 import 'package:crm_k/core/service/user_service.dart';
 import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
+import 'package:crm_k/screens/personnel/my_customers/V/my_customers_view.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/personel_right_panel_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -39,10 +40,10 @@ class PersonelRightPanel extends StatelessWidget {
                 SizedBox.square(
                   dimension: 15,
                 ),
-                IconButton(
-                    icon: const Icon(Icons.call, size: 30, color: Colors.blue),
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Arama Yapılıyor 📞🟢🟢🟢')))),
+                // IconButton(
+                //     icon: const Icon(Icons.call, size: 30, color: Colors.blue),
+                //     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                //         SnackBar(content: Text('Arama Yapılıyor 📞🟢🟢🟢')))),
               ],
             ),
           ),
@@ -52,6 +53,39 @@ class PersonelRightPanel extends StatelessWidget {
           //     child: CircleAvatar(radius: 40, backgroundColor: Colors.blue),
           //   ),
           // ),
+          Expanded(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                        child: StatBox(
+                            title: "Havuz", value: "48", subValue: "%8")),
+                    Expanded(
+                        child: StatBox(
+                            title: "Yeni Başvurular",
+                            value: "15",
+                            subValue: "+12%")),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                        child: StatBox(
+                            title: "Gerçek Müşteri",
+                            value: "18",
+                            subValue: "")),
+                    Expanded(
+                        child: StatBox(
+                            title: "Benim Müşterilerim",
+                            value: "186",
+                            subValue: "",
+                            widget: MyCustomersView())),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 10),
           Center(
             child: Column(

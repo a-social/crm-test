@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:crm_k/core/models/user_model/user_mode.dart';
+
+class ManagementPage extends StatelessWidget {
+  final User user;
+
+  const ManagementPage({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// **📌 Kullanıcı Bilgileri Özet Kartı**
+          Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  /// **Profil Fotoğrafı veya Kullanıcı Baş Harfi**
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.blue,
+                    child: Text(
+                      user.name[0].toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  /// **Kullanıcı Bilgileri**
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user.name,
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text("CRM No: ${user.id}",
+                            style: TextStyle(color: Colors.grey[600])),
+                        Text("Durumu: ${user.phoneStatus}",
+                            style: TextStyle(color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+
+                  /// **Düzenleme Butonu**
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          /// **📞 Kullanıcı ile İletişime Geçme**
+          _buildSectionTitle("📞 İletişim Seçenekleri"),
+          _buildIconWrap([
+            _buildActionIcon(Icons.call, "Telefon Ara", Colors.blue),
+            _buildActionIcon(Icons.circle, "WhatsApp Gönder", Colors.green),
+            _buildActionIcon(Icons.email, "E-Posta Gönder", Colors.orange),
+            _buildActionIcon(Icons.chat, "Mesaj Gönder", Colors.teal),
+          ]),
+
+          /// **💰 Finansal İşlemler**
+          _buildSectionTitle("💰 Finansal İşlemler"),
+          _buildIconWrap([
+            _buildActionIcon(
+                Icons.account_balance_wallet, "Hesap Aç", Colors.blue),
+            _buildActionIcon(Icons.attach_money, "Yatırım Ekle", Colors.green),
+            _buildActionIcon(Icons.history, "İşlem Geçmişi", Colors.orange),
+          ]),
+
+          /// **⚙️ Kullanıcı Yönetimi**
+          _buildSectionTitle("⚙️ Kullanıcı Yönetimi"),
+          _buildIconWrap([
+            _buildActionIcon(
+                Icons.assignment_ind, "Temsilci Atama", Colors.purple),
+            _buildActionIcon(Icons.update, "Durum Güncelle", Colors.blueGrey),
+            _buildActionIcon(Icons.block, "Hesabı Askıya Al", Colors.red),
+          ]),
+
+          /// **📅 Randevu & Not Yönetimi**
+          _buildSectionTitle("📅 Randevu & Notlar"),
+          _buildIconWrap([
+            _buildActionIcon(
+                Icons.calendar_today, "Randevu Planla", Colors.purple),
+            _buildActionIcon(Icons.note_add, "Not Ekle", Colors.blueGrey),
+          ]),
+
+          /// **🔔 Hatırlatıcılar & Takvim**
+          _buildSectionTitle("🔔 Hatırlatıcılar"),
+          _buildIconWrap([
+            _buildActionIcon(Icons.alarm, "Hatırlatıcı Ekle", Colors.red),
+            _buildActionIcon(Icons.event, "Takvim Entegrasyonu", Colors.teal),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// **📌 Bölüm Başlığı**
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+      ),
+    );
+  }
+
+  /// **📌 Uzun Metinler Alt Alta Yazılsın**
+  Widget _buildIconWrap(List<Widget> icons) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Wrap(
+        spacing: 10, // **Her ikon arasına 10px boşluk**
+        runSpacing: 12, // **Eğer satır dolarsa alt satırın boşluğu**
+        alignment: WrapAlignment.start,
+        children: icons.map((icon) {
+          return SizedBox(
+            width: 90, // **Maksimum genişlik**
+            child: icon, // **Alt alta yazılması için sıkıştırma**
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// **📌 İşlem İkonu (Uzun Metinler İçin Alt Alta)**
+  Widget _buildActionIcon(IconData icon, String label, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 30,
+          backgroundColor: color.withOpacity(0.15), // Hafif renk tonu
+          child: Icon(icon, size: 28, color: color),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center, // **Metni ortala**
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          maxLines: 2, // **Maksimum 2 satır olacak**
+          overflow:
+              TextOverflow.ellipsis, // **Uzun metinler taşarsa kesilecek**
+        ),
+      ],
+    );
+  }
+}

@@ -76,4 +76,19 @@ class User {
     if (date == null || date.toString().isEmpty) return null;
     return DateTime.tryParse(date.toString());
   }
+
+  // **toString() Metodu** - Tüm bilgileri okunabilir şekilde döndürür
+  @override
+  String toString() {
+    //      assignedTo: $assignedTo,
+
+    return '''
+      İD: $id,
+      İsim: $name,
+      Mail: $email,
+      Telefon: $phone,
+      Durumu: $phoneStatus,
+      Kayıt Tarihi: ${createdAt?.toIso8601String()},
+    ''';
+  }
 }
