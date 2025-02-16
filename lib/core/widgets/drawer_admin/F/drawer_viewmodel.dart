@@ -14,6 +14,9 @@ class DynamicDrawerVMAdmin {
     "Müşteri Ekle": {Icons.person_add: UserAddScreen()},
     "Müşteri Düzenle": {Icons.co_present_outlined: DeleteUser()},
     "Müşteri Sil": {Icons.person_off: DeleteUser()},
+    "Otomatik Müşteri Atama": {Icons.auto_awesome: DeleteUser()},
     "Çıkış Yap6": {Icons.logout: DashboardScreen()},
+    "GünSonu": {Icons.settings: PersonnelAddScreen()},
+    "Raporlar": {Icons.settings: PersonnelAddScreen()},
   };
 }

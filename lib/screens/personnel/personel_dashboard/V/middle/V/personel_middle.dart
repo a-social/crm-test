@@ -1,5 +1,7 @@
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
+import 'package:crm_k/screens/personnel/my_customers/V/my_customers_view.dart';
+import 'package:crm_k/screens/personnel/personel_dashboard/V/middle/V/list_user_for_personel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +21,64 @@ class PersonelMainContent extends StatelessWidget {
     } else {
       return Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                      child: StatBox(
+                          title: "Gerçek Müşteri", value: "18", subValue: "")),
+                  Expanded(
+                      child: StatBox(
+                          title: "Benim Müşterilerim",
+                          value: "186",
+                          subValue: "",
+                          widget: MyCustomersView())),
+                  Expanded(
+                      child:
+                          StatBox(title: "Havuz", value: "48", subValue: "%8")),
+                  Expanded(
+                      child: StatBox(
+                          title: "Yeni Başvurular",
+                          value: "15",
+                          subValue: "+12%")),
+                ],
+              ),
+            ),
+            // Expanded(
+            //   child: SizedBox(
+            //     child: Column(
+            //       children: [
+            //         Row(
+            //           children: [
+            //             Expanded(
+            //                 child: StatBox(
+            //                     title: "Gerçek Müşteri",
+            //                     value: "18",
+            //                     subValue: "")),
+            //             Expanded(
+            //                 child: StatBox(
+            //                     title: "Arama Süresi",
+            //                     value: "1:42",
+            //                     subValue: "")),
+            //           ],
+            //         ),
+            //         Row(
+            //           children: [
+            //             Expanded(
+            //                 child: StatBox(
+            //                     title: "Havuz", value: "48", subValue: "%8")),
+            //             Expanded(
+            //                 child: StatBox(
+            //                     title: "Yeni Başvurular",
+            //                     value: "15",
+            //                     subValue: "+12%")),
+            //           ],
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
             Expanded(
                 child: Column(
               children: [
@@ -35,34 +94,6 @@ class PersonelMainContent extends StatelessWidget {
                         Expanded(
                           child: Column(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Gerçek Müşteri",
-                                          value: "18",
-                                          subValue: "")),
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Arama Süresi",
-                                          value: "1:42",
-                                          subValue: "")),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Havuz",
-                                          value: "48",
-                                          subValue: "%8")),
-                                  Expanded(
-                                      child: StatBox(
-                                          title: "Yeni Başvurular",
-                                          value: "15",
-                                          subValue: "+12%")),
-                                ],
-                              ),
                               const SizedBox(height: 20),
 
                               // Placeholder for graph
@@ -85,26 +116,25 @@ class PersonelMainContent extends StatelessWidget {
                 ),
               ],
             )),
-            SizedBox(
-              width: 30,
-            ),
+            Spacer(),
             Expanded(
+                flex: 2,
                 child: Column(
-              children: [
-                const Text("Son Değişiklikler",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                Expanded(
-                    child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(flex: 2, child: UserListScreenView()),
-                    SizedBox.square(dimension: 5),
-                    Flexible(child: SizedBox.shrink()),
+                    const Text("Atanan Müşterilerim",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    Expanded(
+                        child: Column(
+                      children: [
+                        Flexible(
+                            flex: 10, child: PersonelsUserListScreenView()),
+                      ],
+                    ))
                   ],
-                ))
-              ],
-            )),
+                )),
           ]));
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
+import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:flutter/services.dart';
 
 class PersonnelManager {
@@ -36,6 +37,26 @@ class PersonnelManager {
       }
     }
     print('Personnel with ID $id not found.');
+  }
+
+  //piechart için
+  Future<List<User>> loadUsers() async {
+    final String response = await rootBundle.loadString('assets/users.json');
+    final List<dynamic> data = json.decode(response);
+    return data.map((json) => User.fromJson(json)).toList();
+  }
+
+  Future<Map<String, int>> getPhoneStatusCounts() async {
+    List<User> users = await loadUsers();
+    Map<String, int> statusCounts = {};
+
+    for (var user in users) {
+      if (user.phoneStatus != null) {
+        statusCounts[user.phoneStatus!] =
+            (statusCounts[user.phoneStatus!] ?? 0) + 1;
+      }
+    }
+    return statusCounts;
   }
 }
 

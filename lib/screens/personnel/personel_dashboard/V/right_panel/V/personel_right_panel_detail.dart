@@ -17,10 +17,22 @@ class PersonelUserDetailPage extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back,
-                      size: 30, color: Colors.blue),
-                  onPressed: () => Navigator.pop(context),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back,
+                          size: 30, color: Colors.blue),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    SizedBox.square(
+                      dimension: 15,
+                    ),
+                    IconButton(
+                      icon:
+                          const Icon(Icons.call, size: 30, color: Colors.blue),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ),
               Center(

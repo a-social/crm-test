@@ -1,3 +1,4 @@
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -248,6 +249,182 @@ class _Badge extends StatelessWidget {
       ),
       padding: EdgeInsets.all(size * .15),
       child: Center(child: Text('D')),
+    );
+  }
+}
+
+class CustomPieChart extends StatelessWidget {
+  final Map<String, int> data;
+  //yüksekliğini ve genişliğini şimdilik uzaktan veriyoruz
+
+  const CustomPieChart({super.key, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    List<PieChartSectionData> sections = _generateSections(data);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 150, // Pie Chart sabit genişlik
+          height: 150, // Pie Chart sabit yükseklik
+          child: PieChart(
+            PieChartData(
+              sections: sections,
+              centerSpaceRadius: 40,
+              sectionsSpace: 2,
+              borderData: FlBorderData(show: false),
+            ),
+          ),
+        ),
+        const SizedBox(width: 40), // Pie Chart ile legend arasında boşluk
+        Expanded(child: _buildLegend()), // Legend düzgün hizalanır
+      ],
+    );
+  }
+
+  List<PieChartSectionData> _generateSections(Map<String, int> data) {
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.cyan,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
+      Colors.brown,
+    ];
+
+    int index = 0;
+    return data.entries
+        .map((entry) {
+          final value = entry.value.toDouble();
+          if (value == 0) return null; // 0 değerleri gösterme
+
+          return PieChartSectionData(
+            value: value,
+            color: colors[index++ % colors.length],
+            radius: 50,
+            showTitle: false,
+          );
+        })
+        .whereType<PieChartSectionData>()
+        .toList();
+  }
+
+  Widget _buildLegend() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: data.entries.where((entry) => entry.value > 0).map((entry) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: _getColorForKey(entry.key),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "${entry.key} (${entry.value})", // Etiketlere sayı eklendi
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Color _getColorForKey(String key) {
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.cyan,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
+      Colors.brown,
+    ];
+    return colors[data.keys.toList().indexOf(key) % colors.length];
+  }
+}
+
+// Örnek Kullanım
+class PieChartExample extends StatelessWidget {
+  const PieChartExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<String, int> sampleData = {
+      "Yeni Atanan": 0,
+      "Yanlış Kişi / No": 2,
+      "Takipte Kal": 18,
+      "Cevapsız": 1494,
+      "İlgili / Sıcak Takip": 2,
+      "Yatırımcı": 0,
+      "Kara Liste": 14,
+      "İlgilenmiyor": 107,
+      "Tekrar Ara": 44,
+      "Ulaşılamıyor": 87,
+    };
+
+    return CustomPieChart(data: sampleData);
+  }
+}
+
+class PieChartUserDetailScreen extends StatefulWidget {
+  const PieChartUserDetailScreen({super.key});
+
+  @override
+  _PieChartUserDetailScreenState createState() =>
+      _PieChartUserDetailScreenState();
+}
+
+class _PieChartUserDetailScreenState extends State<PieChartUserDetailScreen> {
+  late Future<Map<String, int>> _phoneStatusCounts;
+  final PersonnelManager _manager = PersonnelManager();
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneStatusCounts = _manager.getPhoneStatusCounts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: FutureBuilder<Map<String, int>>(
+          future: _phoneStatusCounts,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text("Hata: ${snapshot.error}"));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text("Veri yok"));
+            }
+
+            return CustomPieChart(data: snapshot.data!);
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:crm_k/core/functions/global_functions.dart';
 import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'package:crm_k/core/service/user_service.dart';
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/widgets/fast_links/V/fast_link_view.dart';
@@ -149,17 +150,5 @@ class RightPanelUserView extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(value),
     );
-  }
-}
-
-//yerini değiştirmeyi unutma
-class UserProvider extends ChangeNotifier {
-  User? _selectedUser;
-
-  User? get selectedUser => _selectedUser;
-
-  void selectUser(User user) {
-    _selectedUser = user;
-    notifyListeners(); // Sağ panelin güncellenmesi için haber ver
   }
 }

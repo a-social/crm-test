@@ -3,8 +3,7 @@ import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:crm_k/core/service/personel_service.dart';
-
-import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
+import 'package:crm_k/core/service/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -124,33 +123,43 @@ class StatBox extends StatelessWidget {
   final String title;
   final String value;
   final String subValue;
+  final Widget? widget;
 
   const StatBox(
       {super.key,
       required this.title,
       required this.value,
-      required this.subValue});
+      required this.subValue,
+      this.widget});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(8.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-          color: Colors.blue[100], borderRadius: BorderRadius.circular(10)),
-      child: Column(
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.bold)),
-              Text(subValue, style: TextStyle(color: Colors.green[700])),
-            ],
-          ),
-        ],
+    return InkWell(
+      onTap: () {
+        if (widget != null) {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => widget!));
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+            color: Colors.blue[100], borderRadius: BorderRadius.circular(10)),
+        child: Column(
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold)),
+                Text(subValue, style: TextStyle(color: Colors.green[700])),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

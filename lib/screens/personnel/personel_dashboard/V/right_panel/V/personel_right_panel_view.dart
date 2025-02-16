@@ -1,6 +1,6 @@
 import 'package:crm_k/core/functions/global_functions.dart';
-import 'package:crm_k/core/widgets/fast_links/V/fast_link_view.dart';
-import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_view.dart';
+import 'package:crm_k/core/service/user_service.dart';
+import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/personel_right_panel_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +11,6 @@ class PersonelRightPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).selectedUser;
-    debugPrint('------------$user');
 
     return Container(
       color: Colors.white,
@@ -21,27 +20,38 @@ class PersonelRightPanel extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.topLeft,
-            child: IconButton(
-              icon:
-                  const Icon(Icons.open_in_full, size: 30, color: Colors.blue),
-              onPressed: () {
-                if (user != null) {
-                  Navigator.push(
-                    context,
-                    ExpandPageRoute(
-                        page: PersonelUserDetailPage(
-                            user: user)), // 🔥 Özel animasyonla aç
-                  );
-                }
-              },
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.open_in_full,
+                      size: 30, color: Colors.blue),
+                  onPressed: () {
+                    if (user != null) {
+                      Navigator.push(
+                        context,
+                        ExpandPageRoute(
+                            page: PersonelUserDetailPage(
+                                user: user)), // 🔥 Özel animasyonla aç
+                      );
+                    }
+                  },
+                ),
+                SizedBox.square(
+                  dimension: 15,
+                ),
+                IconButton(
+                    icon: const Icon(Icons.call, size: 30, color: Colors.blue),
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Arama Yapılıyor 📞🟢🟢🟢')))),
+              ],
             ),
           ),
-          Center(
-            child: Hero(
-              tag: 'profile_pic_${user?.email}',
-              child: CircleAvatar(radius: 40, backgroundColor: Colors.blue),
-            ),
-          ),
+          // Center(
+          //   child: Hero(
+          //     tag: 'profile_pic_${user?.email}',
+          //     child: CircleAvatar(radius: 40, backgroundColor: Colors.blue),
+          //   ),
+          // ),
           const SizedBox(height: 10),
           Center(
             child: Column(
@@ -66,6 +76,7 @@ class PersonelRightPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Divider(),
+
           _buildInfoTile("Yatırım Durumu", user?.investmentStatus ?? false),
           _buildInfoTile(
               "Önceki Yatırım Var mı?", user?.previousInvestment ?? false),
@@ -78,7 +89,8 @@ class PersonelRightPanel extends StatelessWidget {
           _buildTextTile("Yatırım Tutarı", "${user?.investmentAmount ?? 0} ₺"),
           const SizedBox(height: 10),
           Divider(),
-          Expanded(child: FastLinkView()),
+
+          // Expanded(child: FastLinkView()),
         ],
       ),
     );

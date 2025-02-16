@@ -137,6 +137,7 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
     String label,
     IconData icon, {
     bool obscureText = false,
+    String type = "",
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -148,7 +149,10 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
           prefixIcon: Icon(icon),
         ),
         obscureText: obscureText,
-        validator: (value) => value!.isEmpty ? "Bu alan boş bırakılamaz" : null,
+        validator: (value) {
+          value!.isEmpty ? "Bu alan boş bırakılamaz" : null;
+          return null;
+        },
       ),
     );
   }
