@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PersonnelManager {
   final List<PersonnelModel> _personnelList = [];
@@ -57,6 +58,56 @@ class PersonnelManager {
       }
     }
     return statusCounts;
+  }
+
+  Future<void> callCustomer(String phoneNumber) async {
+    final Uri callUri = Uri(scheme: "tel", path: phoneNumber);
+
+    if (await canLaunchUrl(callUri)) {
+      await launchUrl(callUri);
+    } else {
+      throw "Arama başlatılamadı: $phoneNumber";
+    }
+  }
+
+  void addNotes(String note) {
+    print('not eklendi $note');
+  }
+
+  void sendWhatsappMessage(String message) {
+    print('mesaj gönderildi $message');
+  }
+
+  Future<void> sendEmail(String emailData) async {
+    // Gelen stringi parçala
+    List<String> parts = emailData.split('|');
+
+    if (parts.length < 3) {
+      throw "Geçersiz format! Lütfen 'mail|konu|içerik' şeklinde gönderin.";
+    }
+
+    String email = parts[0].trim();
+    String subject = Uri.encodeComponent(parts[1].trim());
+    String body = Uri.encodeComponent(parts[2].trim());
+
+    // Gmail URL'sini oluştur
+    final String emailUrl =
+        "https://mail.google.com/mail/?view=cm&fs=1&to=$email&su=$subject&body=$body";
+
+    if (await canLaunchUrl(Uri.parse(emailUrl))) {
+      await launchUrl(Uri.parse(emailUrl),
+          mode: LaunchMode.externalApplication);
+    } else {
+      throw "Gmail açılamadı!";
+    }
+  }
+
+  void addBlockList() {
+    print('Kullanıcı Askıya Alındı');
+  }
+
+  void planningMeeting(DateTime time) {
+    print('$time için randevu oluşturuldu');
   }
 }
 

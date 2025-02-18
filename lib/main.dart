@@ -8,6 +8,7 @@ import 'package:crm_k/screens/admin/add_person/VM/admin_add_person_viewmodule.da
 import 'package:crm_k/screens/admin/add_user/VM/add_user_vm.dart';
 import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/V/login_screen_view.dart';
+import 'package:crm_k/screens/personnel/personel_chat/VM/personel_chat_vm.dart';
 import 'package:crm_k/test2.dart';
 import 'package:crm_k/theme.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PersonelProviderSelect()),
         ChangeNotifierProvider(create: (_) => PersonelService()),
         ChangeNotifierProvider(create: (_) => UserManager()),
+        ChangeNotifierProvider(create: (_) => ChatViewModel()),
+
         //---
         ChangeNotifierProvider(create: (_) => FilterProvider()),
       ],

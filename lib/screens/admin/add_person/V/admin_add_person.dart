@@ -52,7 +52,7 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
                     // 📌 Rol Seçimi (Dropdown)
                     DropdownButtonFormField<String>(
                       value: _role,
-                      items: ["personel", "admin"]
+                      items: ["personel"]
                           .map((role) => DropdownMenuItem(
                                 value: role,
                                 child: Text(role.toUpperCase()),

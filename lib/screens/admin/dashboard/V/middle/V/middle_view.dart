@@ -4,6 +4,7 @@ import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/core/service/user_service.dart';
+import 'package:crm_k/screens/admin/update_person/V/update_person.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -274,7 +275,8 @@ class _UserListScreenViewState extends State<UserListScreenView> {
 }
 
 class PersonelScreenViewState extends StatefulWidget {
-  const PersonelScreenViewState({super.key});
+  const PersonelScreenViewState({super.key, this.isUpdate = false});
+  final bool isUpdate;
 
   @override
   _PersonelScreenViewStateState createState() =>
@@ -283,7 +285,6 @@ class PersonelScreenViewState extends StatefulWidget {
 
 class _PersonelScreenViewStateState extends State<PersonelScreenViewState> {
   late Stream<List<PersonnelModel>> _personnelStream;
-  bool isApi = false; // Varsayılan olarak API'den veri çekecek
 
   @override
   void initState() {
@@ -298,6 +299,7 @@ class _PersonelScreenViewStateState extends State<PersonelScreenViewState> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("Personel Listesi")),
       body: StreamBuilder<List<PersonnelModel>>(
         stream: _personnelStream,
         builder: (context, snapshot) {
@@ -325,6 +327,16 @@ class _PersonelScreenViewStateState extends State<PersonelScreenViewState> {
                   onTap: () {
                     Provider.of<PersonelProviderSelect>(context, listen: false)
                         .selectUser(users[index]);
+
+                    if (widget.isUpdate) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PersonnelUpdateScreen(personnel: users[index]),
+                        ),
+                      );
+                    }
                   },
                 ),
               );

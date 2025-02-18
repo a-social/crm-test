@@ -1,62 +1,74 @@
-import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'dart:io';
+import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 
-class UserUpdateScreen extends StatefulWidget {
-  final User user;
-  const UserUpdateScreen({super.key, required this.user});
+//db bağlanacak
+class PersonnelUpdateScreen extends StatefulWidget {
+  final PersonnelModel personnel;
+  const PersonnelUpdateScreen({super.key, required this.personnel});
 
   @override
-  _UserUpdateScreenState createState() => _UserUpdateScreenState();
+  _PersonnelUpdateScreenState createState() => _PersonnelUpdateScreenState();
 }
 
-class _UserUpdateScreenState extends State<UserUpdateScreen> {
+class _PersonnelUpdateScreenState extends State<PersonnelUpdateScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  late TextEditingController _investmentAmountController;
-  String _phoneStatus = "Onayladı"; // Varsayılan değer
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.user.name);
-    _emailController = TextEditingController(text: widget.user.email);
-    _phoneController = TextEditingController(text: widget.user.phone);
-    _investmentAmountController =
-        TextEditingController(text: widget.user.investmentAmount.toString());
-    _phoneStatus = widget.user.phoneStatus ?? 'false';
+    _nameController = TextEditingController(text: widget.personnel.name);
+    _emailController = TextEditingController(text: widget.personnel.email);
+    _phoneController = TextEditingController(text: widget.personnel.phone);
   }
 
-  Future<void> _updateUser() async {
-    final String apiUrl =
-        "http://localhost:8080/update-user/${widget.user.email}";
+  Future<void> _updatePersonnel() async {
+    try {
+      // **1️⃣ JSON dosyasını oku**
+      final String response =
+          await rootBundle.loadString('assets/personnel.json');
+      List<dynamic> personnelList = json.decode(response);
 
-    final Map<String, dynamic> updatedData = {
-      "name": _nameController.text,
-      "email": _emailController.text,
-      "phone": _phoneController.text,
-      "investment_amount":
-          double.tryParse(_investmentAmountController.text) ?? 0,
-      "phone_status": _phoneStatus,
-    };
+      // **2️⃣ Güncellenecek personeli bul**
+      int index =
+          personnelList.indexWhere((p) => p["id"] == widget.personnel.id);
+      if (index == -1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("❌ Güncelleme başarısız: Personel bulunamadı!")),
+        );
+        return;
+      }
 
-    final response = await http.put(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(updatedData),
-    );
+      // **3️⃣ Yeni verileri güncelle**
+      personnelList[index] = {
+        "id": widget.personnel.id,
+        "name": _nameController.text,
+        "email": _emailController.text,
+        "phone": _phoneController.text,
+        "role": widget.personnel.role, // **Rol değiştirilmiyor!**
+      };
 
-    if (response.statusCode == 200) {
+      // **4️⃣ Güncellenmiş JSON'u dosyaya yaz**
+      final String updatedJson = jsonEncode(personnelList);
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/personnel.json');
+      await file.writeAsString(updatedJson);
+
+      // **5️⃣ Başarı mesajı ve sayfayı kapatma**
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Kullanıcı başarıyla güncellendi!")),
+        const SnackBar(content: Text("✅ Personel başarıyla güncellendi!")),
       );
-      Navigator.pop(context); // Güncelleme sonrası geri dön
-    } else {
+      Navigator.pop(context);
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Güncelleme başarısız: ${response.body}")),
+        SnackBar(content: Text("❌ Güncelleme başarısız: $e")),
       );
     }
   }
@@ -64,69 +76,52 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Kullanıcı Güncelle")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTextField(_nameController, "Ad Soyad", Icons.person),
-                  _buildTextField(_emailController, "E-Posta", Icons.email,
-                      enabled: false),
-                  _buildTextField(_phoneController, "Telefon", Icons.phone),
-                  _buildTextField(_investmentAmountController,
-                      "Yatırım Miktarı", Icons.attach_money),
-
-                  // 📌 Telefon Durumu (Dropdown)
-                  DropdownButtonFormField<String>(
-                    value: _phoneStatus,
-                    items: ["Cevapsız", "Yanlış No", "Meşgul", "Onayladı"]
-                        .map((status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _phoneStatus = value!;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: "Telefon Durumu",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.phone_callback),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 📌 Güncelle Butonu
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        _updateUser();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 14),
-                      textStyle: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    child: const Text("Güncelle"),
-                  ),
-                ],
+      appBar: AppBar(title: const Text("Personel Güncelle")),
+      body: Center(
+        child: Container(
+          width: 350,
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTextField(_nameController, "Ad Soyad", Icons.person),
+                _buildTextField(_emailController, "E-Posta", Icons.email,
+                    enabled: false),
+                _buildTextField(_phoneController, "Telefon", Icons.phone),
+                const SizedBox(height: 20),
+
+                // 📌 Güncelle Butonu
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      _updatePersonnel();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 14),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Text("Güncelle"),
+                ),
+              ],
             ),
           ),
         ),
@@ -138,7 +133,7 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
       TextEditingController controller, String label, IconData icon,
       {bool enabled = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(

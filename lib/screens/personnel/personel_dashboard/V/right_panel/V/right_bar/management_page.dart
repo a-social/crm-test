@@ -1,11 +1,18 @@
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 
-class ManagementPage extends StatelessWidget {
+class ManagementPage extends StatefulWidget {
   final User user;
 
   const ManagementPage({super.key, required this.user});
 
+  @override
+  State<ManagementPage> createState() => _ManagementPageState();
+}
+
+class _ManagementPageState extends State<ManagementPage> {
+  final PersonnelManager manager = PersonnelManager();
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -20,45 +27,7 @@ class ManagementPage extends StatelessWidget {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  /// **Profil Fotoğrafı veya Kullanıcı Baş Harfi**
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.blue,
-                    child: Text(
-                      user.name[0].toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  /// **Kullanıcı Bilgileri**
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.name,
-                            style: const TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold)),
-                        Text("CRM No: ${user.id}",
-                            style: TextStyle(color: Colors.grey[600])),
-                        Text("Durumu: ${user.phoneStatus}",
-                            style: TextStyle(color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-
-                  /// **Düzenleme Butonu**
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
+              child: _TopEditUSerInfoBar(user: widget.user),
             ),
           ),
 
@@ -67,9 +36,24 @@ class ManagementPage extends StatelessWidget {
           /// **📞 Kullanıcı ile İletişime Geçme**
           _buildSectionTitle("📞 İletişim Seçenekleri"),
           _buildIconWrap([
-            _buildActionIcon(Icons.call, "Telefon Ara", Colors.blue),
+            _buildActionIcon(
+              Icons.call,
+              "Telefon Ara",
+              Colors.blue,
+              () {
+                manager.callCustomer(widget.user.phone ?? '');
+              },
+            ),
             _buildActionIcon(Icons.circle, "WhatsApp Gönder", Colors.green),
-            _buildActionIcon(Icons.email, "E-Posta Gönder", Colors.orange),
+            _buildActionIcon(
+              Icons.email,
+              "E-Posta Gönder",
+              Colors.orange,
+              () {
+                manager.sendEmail(
+                    'sahandamar274@gmail.com|örnek|bu bir örnek mesajdır lütfen devamını ekleyelim');
+              },
+            ),
             _buildActionIcon(Icons.chat, "Mesaj Gönder", Colors.teal),
           ]),
 
@@ -141,14 +125,18 @@ class ManagementPage extends StatelessWidget {
   }
 
   /// **📌 İşlem İkonu (Uzun Metinler İçin Alt Alta)**
-  Widget _buildActionIcon(IconData icon, String label, Color color) {
+  Widget _buildActionIcon(IconData icon, String label, Color color,
+      [void Function()? onTap]) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: color.withOpacity(0.15), // Hafif renk tonu
-          child: Icon(icon, size: 28, color: color),
+        InkWell(
+          onTap: onTap,
+          child: CircleAvatar(
+            radius: 30,
+            backgroundColor: color.withOpacity(0.15), // Hafif renk tonu
+            child: Icon(icon, size: 28, color: color),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -158,6 +146,54 @@ class ManagementPage extends StatelessWidget {
           maxLines: 2, // **Maksimum 2 satır olacak**
           overflow:
               TextOverflow.ellipsis, // **Uzun metinler taşarsa kesilecek**
+        ),
+      ],
+    );
+  }
+}
+
+class _TopEditUSerInfoBar extends StatelessWidget {
+  const _TopEditUSerInfoBar({super.key, required this.user});
+  final User user;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        /// **Profil Fotoğrafı veya Kullanıcı Baş Harfi**
+        CircleAvatar(
+          radius: 35,
+          backgroundColor: Colors.blue,
+          child: Text(
+            user.name[0].toUpperCase(),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(width: 16),
+
+        /// **Kullanıcı Bilgileri**
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(user.name,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("CRM No: ${user.id}",
+                  style: TextStyle(color: Colors.grey[600])),
+              Text("Durumu: ${user.phoneStatus}",
+                  style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+        ),
+
+        /// **Düzenleme Butonu**
+        IconButton(
+          icon: const Icon(Icons.edit, color: Colors.blue),
+          onPressed: () {
+            print('selam');
+          },
         ),
       ],
     );

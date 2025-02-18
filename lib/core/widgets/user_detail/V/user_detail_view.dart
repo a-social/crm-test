@@ -1,9 +1,8 @@
 import 'package:crm_k/core/models/user_model/user_mode.dart';
-import 'package:crm_k/core/widgets/user_detail/other_v/appointment_section.dart';
+
 import 'package:crm_k/core/widgets/user_detail/other_v/contact_actions.dart';
 import 'package:crm_k/core/widgets/user_detail/other_v/investor_detail_selection.dart';
-import 'package:crm_k/core/widgets/user_detail/other_v/notes_timeline.dart';
-import 'package:crm_k/core/widgets/user_detail/other_v/tag_manager.dart';
+
 import 'package:crm_k/core/widgets/user_detail/other_v/user_info_card.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/right_bar/communication_notes_page.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +61,6 @@ class UserDetailWidget extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          /// **Eklenen Bölüm (Tam İstediğin Gibi)**
                           Card(
                             child: Padding(
                               padding: const EdgeInsets.all(16.0),
