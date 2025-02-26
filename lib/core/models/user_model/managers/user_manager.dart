@@ -61,6 +61,12 @@ class UserManager with ChangeNotifier {
       throw Exception("İstek sırasında hata oluştu: $e");
     }
   }
+
+  String blockUser(User user) {
+    print(
+        '${user.name} phone_status changed to BLOCKED api bağlantısı daha yapılmadı');
+    return '${user.name} phone_status changed to BLOCKED api bağlantısı daha yapılmadı';
+  }
 }
 
 class UserManagerTest {

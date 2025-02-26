@@ -1,131 +1,257 @@
 import 'dart:convert';
 
+import 'package:crm_k/core/models/personel_model/personel_model.dart';
+import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:excel/excel.dart' as lib;
 
 class AdminFunctionLoadDatButton extends StatefulWidget {
   const AdminFunctionLoadDatButton({super.key});
 
   @override
-  _AdminFunctionLoadDatButtonState createState() =>
+  State<AdminFunctionLoadDatButton> createState() =>
       _AdminFunctionLoadDatButtonState();
 }
 
 class _AdminFunctionLoadDatButtonState
     extends State<AdminFunctionLoadDatButton> {
-  int _currentStep = 0;
-  String? _selectedCompany; // Seçilen firma
+  int stepNumber = 0;
+  final PageController _controller =
+      PageController(initialPage: 0, keepPage: true);
+  final Duration pageChangedDuration = Duration(milliseconds: 300);
+  final Curve curve = Curves.linear;
+  //----
+  String selectedCompany = "";
+  List<PersonnelModel> selectedPersonels = [];
+  List<User> selectedUsers = [];
 
-  void _nextStep() {
-    if (_currentStep < 1) {
-      setState(() {
-        _currentStep++;
-      });
-    }
+  void nextPage() {
+    _controller.nextPage(duration: pageChangedDuration, curve: curve);
+    stepNumber += 1;
+    setState(() {});
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() {
-        _currentStep--;
-      });
-    }
+  void previousPage() {
+    _controller.previousPage(duration: pageChangedDuration, curve: curve);
+    stepNumber -= 1;
+    setState(() {});
+  }
+
+  void updateSelectedCompany(String company) {
+    setState(() {
+      selectedCompany = company;
+    });
+  }
+
+  void updateSelectedPersonnel(List<PersonnelModel> personnelList) {
+    setState(() {
+      selectedPersonels = personnelList;
+    });
+  }
+
+  void updateSelectedUsers(List<User> users) {
+    setState(() {
+      selectedUsers = users;
+    });
+  }
+
+  void showCustomAlertDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Uyarı"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Tamam"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        padding: EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 📌 ADIM GÖSTERGESİ
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStepIndicator("1. Firma Seçimi", 0),
-                _buildStepIndicator("2. İlgili Personel Seçimi", 1),
-                _buildStepIndicator("3. Ön Gösterim", 2),
-                _buildStepIndicator("4. Onaylama", 3),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // 📌 ADIMLARA GÖRE GÖSTERİLEN İÇERİK
             Expanded(
-              child: _currentStep == 0
-                  ? _buildCompanySelection()
-                  : _buildSecondStep(),
-            ),
-
-            // 📌 BUTONLAR (GERİ / DEVAM)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentStep > 0)
-                  ElevatedButton(
-                    onPressed: _previousStep,
-                    child: const Text("Geri"),
+                flex: 1,
+                child: Container(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _RowDefaultElement(
+                          subValue: selectedCompany,
+                          value: '1.Adım ',
+                          isCheck: stepNumber > 0),
+                      _RowDefaultElement(
+                          subValue: selectedPersonels.isEmpty
+                              ? ''
+                              : 'Seçilen Personel Sayısı \n${selectedPersonels.length.toString()}',
+                          value: '2.Adım',
+                          isCheck: stepNumber > 1),
+                      _RowDefaultElement(
+                          subValue: selectedCompany,
+                          value: '3.Adım',
+                          isCheck: stepNumber > 2),
+                      _RowDefaultElement(
+                          subValue: selectedCompany,
+                          value: '4.Adım',
+                          isCheck: stepNumber > 3)
+                    ],
                   ),
-                ElevatedButton(
-                  onPressed: _selectedCompany != null || _currentStep == 1
-                      ? _nextStep
-                      : null,
-                  child: const Text("Devam Et"),
-                ),
-              ],
-            ),
+                )),
+            Expanded(
+                flex: 6,
+                child: PageView(
+                  controller: _controller,
+                  physics: NeverScrollableScrollPhysics(),
+                  children: [
+                    DropdownPage(
+                      onCompanySelected: updateSelectedCompany,
+                      initialCompany: selectedCompany,
+                    ),
+                    _PersonnelSelectionScreen(
+                        initialSelectedPersonnel: selectedPersonels,
+                        onPersonnelSelected: updateSelectedPersonnel),
+                    _FileUploadScreen(
+                      onUsersConverted: updateSelectedUsers,
+                    ),
+                    Container(color: Colors.green),
+                    Container(color: Colors.red),
+                  ],
+                )),
+            Expanded(
+                flex: 1,
+                child: Row(
+                  children: [
+                    stepNumber != 0
+                        ? ElevatedButton(
+                            onPressed: () {
+                              previousPage();
+                            },
+                            child: Text('Önceki Adım'))
+                        : SizedBox.shrink(),
+                    Expanded(child: Center(child: Text(stepNumber.toString()))),
+                    stepNumber != 4
+                        ? ElevatedButton(
+                            onPressed: () {
+                              if (stepNumber == 0 && selectedCompany == "") {
+                                showCustomAlertDialog(
+                                    context, 'Lütfen Firma Seçiniz');
+                                return;
+                              } else if (stepNumber == 1 &&
+                                  selectedPersonels.isEmpty) {
+                                showCustomAlertDialog(context,
+                                    'Lütfen en az bir personel seçiniz.');
+                                return;
+                              } else if (stepNumber == 2 &&
+                                  selectedUsers.isEmpty) {
+                                showCustomAlertDialog(
+                                    context, 'Lütfen Verilerinizi İşleyiniz');
+                                return;
+                              }
+                              nextPage();
+                            },
+                            child: Text('Devam Et'))
+                        : SizedBox.shrink()
+                  ],
+                ))
           ],
         ),
       ),
     );
   }
+}
 
-  // 📌 ADIM GÖSTERGESİ (Üstteki Navigation)
-  Widget _buildStepIndicator(String title, int stepIndex) {
-    bool isActive = _currentStep >= stepIndex;
+class _RowDefaultElement extends StatelessWidget {
+  const _RowDefaultElement(
+      {required this.value, required this.isCheck, required this.subValue});
+  final String value;
+  final String subValue;
+  final bool isCheck;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: isActive ? Colors.blue : Colors.grey,
-          child: Text("${stepIndex + 1}",
-              style: const TextStyle(color: Colors.white)),
+        Icon(
+          isCheck ? Icons.check : Icons.circle_outlined,
+          color: Colors.green,
         ),
-        const SizedBox(height: 5),
-        Text(title,
-            style: TextStyle(color: isActive ? Colors.black : Colors.grey)),
+        SizedBox.square(
+          dimension: 5,
+        ),
+        Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  decoration: (isCheck ? TextDecoration.lineThrough : null),
+                  fontSize: 20),
+            ),
+            Text(
+              subValue,
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(color: isCheck ? Colors.green : null, fontSize: 15),
+            ),
+          ],
+        )
       ],
     );
   }
+}
 
-  // 📌 1. ADIM: FİRMA SEÇİMİ
-  Widget _buildCompanySelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Lütfen bir firma seçin:",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
+class DropdownPage extends StatefulWidget {
+  final Function(String) onCompanySelected;
+  final String? initialCompany; // 📌 Seçili firma
 
-        // Firma Seçenekleri (Buton)
-        Row(
-          children: [
-            _buildCompanyButton("1. Firma"),
-            const SizedBox(width: 10),
-            _buildCompanyButton("2. Firma"),
-          ],
-        ),
+  const DropdownPage(
+      {super.key, required this.onCompanySelected, this.initialCompany});
 
-        const SizedBox(height: 20),
+  @override
+  _DropdownPageState createState() => _DropdownPageState();
+}
 
-        // Dropdown ile seçim alternatifi
-        DropdownButtonFormField<String>(
+class _DropdownPageState extends State<DropdownPage> {
+  late String? _selectedCompany;
+  final List<String> companyList = [
+    "1. Firma",
+    "2. Firma"
+  ]; // 📌 Mevcut şirketler
+
+  @override
+  void initState() {
+    super.initState();
+    // 📌 Eğer initialCompany, items içinde yoksa `null` yap
+    _selectedCompany = companyList.contains(widget.initialCompany)
+        ? widget.initialCompany
+        : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 500,
+        child: DropdownButtonFormField<String>(
           value: _selectedCompany,
           hint: const Text("Firma Seçin"),
-          items: ["1. Firma", "2. Firma"]
+          items: companyList
               .map(
                   (firma) => DropdownMenuItem(value: firma, child: Text(firma)))
               .toList(),
@@ -133,53 +259,38 @@ class _AdminFunctionLoadDatButtonState
             setState(() {
               _selectedCompany = value;
             });
+            widget.onCompanySelected(value ?? '');
           },
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
         ),
-      ],
-    );
-  }
-
-  // 📌 Firma Seçim Butonları
-  Widget _buildCompanyButton(String companyName) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          _selectedCompany = companyName;
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor:
-            _selectedCompany == companyName ? Colors.blue : Colors.grey,
-      ),
-      child: Text(companyName),
-    );
-  }
-
-  // 📌 2. ADIM: PLACEHOLDER (Firma Bilgisi Görünecek)
-  Widget _buildSecondStep() {
-    return Center(
-      child: Text(
-        _selectedCompany != null
-            ? "Seçilen Firma: $_selectedCompany"
-            : "Henüz firma seçilmedi",
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
 }
 
-class _SelectPersonnelScreen extends StatefulWidget {
-  final String selectedCompany; // Önceki ekrandan gelen firma
+class _PersonnelSelectionScreen extends StatefulWidget {
+  //api bağlandıktan sonra companye ait personeller gelecekler yani komple modeller ve model fonksiyonları değişecek
+  final Function(List<PersonnelModel>) onPersonnelSelected;
+  final List<PersonnelModel>?
+      initialSelectedPersonnel; // 📌 Önceden seçili olan personeller
 
-  const _SelectPersonnelScreen({required this.selectedCompany});
+  const _PersonnelSelectionScreen(
+      {super.key,
+      required this.onPersonnelSelected,
+      this.initialSelectedPersonnel});
 
   @override
-  _SelectPersonnelScreenState createState() => _SelectPersonnelScreenState();
+  _PersonnelSelectionScreenState createState() =>
+      _PersonnelSelectionScreenState();
 }
 
-class _SelectPersonnelScreenState extends State<_SelectPersonnelScreen> {
-  List<Map<String, dynamic>> _allPersonnel = []; // Tüm personeller
-  List<Map<String, dynamic>> _selectedPersonnel = []; // Seçili personeller
+class _PersonnelSelectionScreenState extends State<_PersonnelSelectionScreen> {
+  List<PersonnelModel> allPersonnel = [];
+  List<PersonnelModel> selectedPersonnel = [];
 
   @override
   void initState() {
@@ -187,47 +298,49 @@ class _SelectPersonnelScreenState extends State<_SelectPersonnelScreen> {
     _loadPersonnel();
   }
 
-  // 📌 JSON'dan personel verisini oku
+  // 📌 JSON'dan personel verisini yükle
   Future<void> _loadPersonnel() async {
     final String response =
         await rootBundle.loadString('assets/personnel.json');
     final List<dynamic> data = json.decode(response);
 
     setState(() {
-      _allPersonnel = List<Map<String, dynamic>>.from(data);
+      allPersonnel = data.map((json) => PersonnelModel.fromJson(json)).toList();
+
+      // 📌 Eğer daha önce seçili personeller varsa onları ekleyelim
+      if (widget.initialSelectedPersonnel != null) {
+        selectedPersonnel = List.from(widget.initialSelectedPersonnel!);
+      }
     });
   }
 
-  // 📌 Personel seçme fonksiyonu
-  void _toggleSelection(Map<String, dynamic> personnel) {
+  // 📌 Personel seçme/toggle (Sol taraf güncellenmez)
+  void _toggleSelection(PersonnelModel personnel) {
     setState(() {
-      if (_selectedPersonnel.contains(personnel)) {
-        _selectedPersonnel.remove(personnel);
+      if (selectedPersonnel.any((p) => p.id == personnel.id)) {
+        selectedPersonnel.removeWhere((p) => p.id == personnel.id);
       } else {
-        _selectedPersonnel.add(personnel);
+        selectedPersonnel.add(personnel);
       }
     });
+
+    widget.onPersonnelSelected(selectedPersonnel); // 📌 Seçimi güncelle
   }
 
   // 📌 Tüm personelleri seç
   void _selectAllPersonnel() {
     setState(() {
-      _selectedPersonnel = List.from(_allPersonnel);
+      selectedPersonnel = List.from(allPersonnel);
     });
+
+    widget.onPersonnelSelected(selectedPersonnel); // 📌 Seçimi güncelle
   }
 
-  // 📌 Devam butonu
-  void _goToNextStep() {
-    if (_selectedPersonnel.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => NextStepScreen(
-            selectedCompany: widget.selectedCompany,
-            selectedPersonnel: _selectedPersonnel,
-          ),
-        ),
-      );
+  // 📌 Seçilen personelleri yazdır
+  void _printSelectedPersonnel() {
+    print("✅ Seçilen Personeller:");
+    for (var person in selectedPersonnel) {
+      print(person.toString());
     }
   }
 
@@ -236,177 +349,325 @@ class _SelectPersonnelScreenState extends State<_SelectPersonnelScreen> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            // 📌 ADIM GÖSTERGESİ
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStepIndicator("1. Firma Seçimi", true),
-                _buildStepIndicator("2. Personel Seçimi", true),
-                _buildStepIndicator("3. Özet", false),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // 📌 Tüm Personelleri Ekle Butonu
-            ElevatedButton(
-              onPressed: _selectAllPersonnel,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text("Tüm Personelleri Ekle"),
-            ),
-            const SizedBox(height: 10),
-
-            // 📌 2 KOLONLU PERSONEL SEÇİM LİSTESİ
+            // 📌 Tüm Personeller Listesi (Sol Tarafta)
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 📌 Sol Taraf: Tüm Personeller Listesi
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Tüm Personeller",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        Expanded(
-                            child: _buildPersonnelList(_allPersonnel, false)),
-                      ],
-                    ),
+                  ElevatedButton(
+                    onPressed: _selectAllPersonnel,
+                    child: const Text("Tüm Personelleri Seç"),
                   ),
-
-                  const VerticalDivider(width: 20, thickness: 2),
-
-                  // 📌 Sağ Taraf: Seçili Personeller Listesi
+                  const SizedBox(height: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Seçili Personeller",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        Expanded(
-                            child:
-                                _buildPersonnelList(_selectedPersonnel, true)),
-                      ],
+                    child: ListView.builder(
+                      itemCount: allPersonnel.length,
+                      itemBuilder: (context, index) {
+                        final personnel = allPersonnel[index];
+                        bool isSelected =
+                            selectedPersonnel.any((p) => p.id == personnel.id);
+
+                        return Card(
+                          color: isSelected
+                              ? Colors.grey.shade300
+                              : Colors.white, // 📌 Seçili olan gri olacak
+                          child: ListTile(
+                            title: Text(personnel.name),
+                            subtitle: Text(personnel.email),
+                            trailing: IconButton(
+                              icon: Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons
+                                        .add_circle_outline, // 📌 Eğer seçildiyse "check", değilse "add"
+                                color: isSelected ? Colors.blue : Colors.grey,
+                              ),
+                              onPressed: isSelected
+                                  ? null
+                                  : () => _toggleSelection(
+                                      personnel), // 📌 Eğer zaten seçiliyse buton çalışmayacak
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(width: 16),
 
-            // 📌 Devam Butonu
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: _selectedPersonnel.isNotEmpty ? _goToNextStep : null,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Devam Et"),
+            // 📌 Seçilen Personeller Listesi (Sağ Tarafta)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Seçilen Personeller",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: selectedPersonnel.isNotEmpty
+                        ? ListView.builder(
+                            itemCount: selectedPersonnel.length,
+                            itemBuilder: (context, index) {
+                              final personnel = selectedPersonnel[index];
+                              return Card(
+                                color: Colors.green.shade100,
+                                child: ListTile(
+                                  title: Text(personnel.name),
+                                  subtitle: Text(personnel.email),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.red),
+                                    onPressed: () => _toggleSelection(
+                                        personnel), // 📌 Seçileni kaldır
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : const Center(
+                            child: Text("Henüz personel seçilmedi.")),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  // 📌 Adım Gösterge Yapısı
-  Widget _buildStepIndicator(String title, bool isActive) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: isActive ? Colors.blue : Colors.grey,
-          child: Text(
-            title.substring(0, 1),
-            style: const TextStyle(color: Colors.white),
-          ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _printSelectedPersonnel,
+          child: const Text("Seçilenleri Göster"),
         ),
-        const SizedBox(height: 5),
-        Text(title,
-            style: TextStyle(color: isActive ? Colors.black : Colors.grey)),
-      ],
-    );
-  }
-
-  // 📌 Personel Listesi
-  Widget _buildPersonnelList(
-      List<Map<String, dynamic>> personnelList, bool isSelectedList) {
-    return ListView.builder(
-      itemCount: personnelList.length,
-      itemBuilder: (context, index) {
-        final personnel = personnelList[index];
-        bool isSelected = _selectedPersonnel.contains(personnel);
-
-        return Card(
-          color: isSelected ? Colors.lightBlue.shade100 : Colors.white,
-          child: ListTile(
-            title: Text(personnel["name"]),
-            subtitle: Text(personnel["email"]),
-            trailing: IconButton(
-              icon: Icon(Icons.radio_button_checked,
-                  color: isSelected ? Colors.blue : Colors.grey),
-              onPressed: () => _toggleSelection(personnel),
-            ),
-          ),
-        );
-      },
+      ),
     );
   }
 }
 
-// 📌 SONRAKİ EKRAN (ÖZET)
-class NextStepScreen extends StatelessWidget {
-  final String selectedCompany;
-  final List<Map<String, dynamic>> selectedPersonnel;
+//-----
+class _FileUploadScreen extends StatefulWidget {
+  const _FileUploadScreen({super.key, required this.onUsersConverted});
+  final Function(List<User>) onUsersConverted;
 
-  const NextStepScreen(
-      {super.key,
-      required this.selectedCompany,
-      required this.selectedPersonnel});
+  @override
+  _FileUploadScreenState createState() => _FileUploadScreenState();
+}
+
+class _FileUploadScreenState extends State<_FileUploadScreen> {
+  List<List<dynamic>> _fileData = [];
+  final List<User> _convertedUsers = [];
+  String _fileName = "Henüz dosya seçilmedi.";
+  bool _isDragging = false;
+  bool _isLoading = false; // 📌 Yükleniyor durumu
+
+  // 📌 Dosya Seçme (CSV & XLSX)
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv', 'xlsx'],
+    );
+
+    if (result != null) {
+      Uint8List? fileBytes = result.files.first.bytes;
+      String fileName = result.files.first.name;
+      String? extension = result.files.first.extension;
+
+      if (fileBytes != null) {
+        setState(() => _isLoading = true); // 📌 Yükleniyor başlat
+        if (extension == "csv") {
+          _readCSVFile(fileBytes, fileName);
+        } else if (extension == "xlsx") {
+          _readExcelFile(fileBytes, fileName);
+        }
+      }
+    }
+  }
+
+  // 📌 CSV Dosyasını Oku
+  void _readCSVFile(Uint8List bytes, String fileName) {
+    final csvString = utf8.decode(bytes);
+    List<List<dynamic>> csvTable =
+        const CsvToListConverter().convert(csvString);
+
+    setState(() {
+      _fileData = csvTable;
+      _fileName = fileName;
+      _isLoading = false; // 📌 Yükleniyor tamamlandı
+    });
+  }
+
+  // 📌 XLSX (Excel) Dosyasını Oku
+  void _readExcelFile(Uint8List bytes, String fileName) {
+    final excel = lib.Excel.decodeBytes(bytes);
+    List<List<dynamic>> rows = [];
+
+    for (var table in excel.tables.keys) {
+      for (var row in excel.tables[table]!.rows) {
+        rows.add(row.map((cell) => cell?.value ?? '').toList());
+      }
+      break; // 📌 İlk tabloyu al
+    }
+
+    setState(() {
+      _fileData = rows;
+      _fileName = fileName;
+      _isLoading = false; // 📌 Yükleniyor tamamlandı
+    });
+  }
+
+  // 📌 Yüklenen Dosyayı Temizle
+  void _clearFile() {
+    setState(() {
+      _fileData = [];
+      _fileName = "Henüz dosya seçilmedi.";
+      _convertedUsers.clear();
+    });
+  }
+
+  // 📌 Verileri `User` Modeline Dönüştür
+  Future<void> _convertData() async {
+    setState(() => _isLoading = true); // 📌 Yükleniyor başlat
+    _convertedUsers.clear();
+
+    for (var element in _fileData) {
+      List<String> values =
+          element.toString().split(',').map((e) => e.trim()).toList();
+
+      try {
+        User user = User(
+          id: int.tryParse(values[0]),
+          name: values[1],
+          email: values[2],
+          phone: values[3],
+          tradeStatus: values[4].toLowerCase() == 'true',
+          investmentStatus: values[5].toLowerCase() == 'true',
+          investmentAmount: int.tryParse(values[6]) ?? 0,
+          assignedTo: values[7],
+          callDuration: int.tryParse(values[8]),
+          phoneStatus: values[9],
+          previousInvestment: values[10].toLowerCase() == 'true',
+          expectedInvestmentDate: _parseDate(values[11]),
+          createdAt: DateTime.now(),
+        );
+        print(user.toString());
+
+        _convertedUsers.add(user);
+      } catch (e) {
+        print("❌ Kullanıcı dönüşüm hatası: $e");
+      }
+    }
+
+    setState(() => _isLoading = false); // 📌 Yükleniyor tamamlandı
+    widget.onUsersConverted(_convertedUsers);
+  }
+
+  // 📌 Tarih dönüşümü için yardımcı fonksiyon
+  DateTime? _parseDate(String? date) {
+    if (date == null || date.isEmpty) return null;
+    return DateTime.tryParse(date);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Seçilen Firma:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(selectedCompany, style: const TextStyle(fontSize: 16)),
-
-            const SizedBox(height: 20),
-
-            const Text("Seçilen Personeller:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Expanded(
-              child: ListView.builder(
-                itemCount: selectedPersonnel.length,
-                itemBuilder: (context, index) {
-                  final personnel = selectedPersonnel[index];
-                  return ListTile(
-                    title: Text(personnel["name"]),
-                    subtitle: Text(personnel["email"]),
-                  );
-                },
+            // 📌 Dosya Yükleme Alanı
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: _pickFile,
+                onPanStart: (_) => setState(() => _isDragging = true),
+                onPanCancel: () => setState(() => _isDragging = false),
+                child: Container(
+                  width: 400,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue, width: 2),
+                    color: _isDragging
+                        ? Colors.blue.shade100
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _isDragging
+                          ? "Dosyayı bırakın!"
+                          : "CSV veya XLSX dosyanızı buraya sürükleyin\nyada tıklayın.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
               ),
             ),
+            const SizedBox(height: 10),
+
+            // 📌 Seçili Dosya Adı
+            Text(
+              "Seçili Dosya: $_fileName",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            // 📌 Dosya Temizleme Butonu
+            if (_fileData.isNotEmpty)
+              ElevatedButton(
+                onPressed: _clearFile,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text("Dosyayı Temizle"),
+              ),
 
             const SizedBox(height: 20),
 
-            // 📌 Tamamlandı Butonu
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Tamamlandı"),
+            // 📌 **Loading Animasyonu**
+            if (_isLoading)
+              const CircularProgressIndicator() // 📌 Dosya yüklenirken göster
+            else
+              ElevatedButton(
+                onPressed: _convertData, // 📌 Verileri dönüştür
+                child: const Text("Verileri İşle"),
               ),
+
+            const SizedBox(height: 20),
+
+            // 📌 Dosya İçeriğini Göster
+            Expanded(
+              child: _convertedUsers.isNotEmpty
+                  ? ListView.builder(
+                      itemCount: _convertedUsers.length,
+                      itemBuilder: (context, index) {
+                        User user = _convertedUsers[index];
+                        if (index == 0) {
+                          return Divider();
+                        }
+
+                        return Card(
+                          child: ListTile(
+                            leading: Text(index.toString()),
+                            title: Text(
+                                "${user.name} (${user.email})"), // 📌 Ad ve Email
+                            subtitle: Text(
+                              "Telefon: ${user.phone ?? 'Yok'} | "
+                              "Durum: ${user.phoneStatus ?? 'Bilinmiyor'} | "
+                              "Yatırım: ${user.investmentAmount} | "
+                              "Atanan: ${user.assignedTo ?? 'Atama Yok'}",
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : const Text("Henüz dosya yüklenmedi."),
             ),
           ],
         ),

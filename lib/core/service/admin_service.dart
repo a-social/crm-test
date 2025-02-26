@@ -21,6 +21,9 @@ class AdminProvider extends ChangeNotifier {
 
   /// **Admin Verisini Al**
   Future<void> fetchAdmin(String email) async {
+    //admin nedense json dosyasından kontrol ediliyor auth servisi yok
+    //bu kısmı kendi auth kısmımızı yarattık aslında bunu engellemek için
+    //DÜZENLENECEK JSONLAR KALKACAK
     try {
       String jsonString = await rootBundle.loadString('assets/admin.json');
       List<dynamic> jsonData = json.decode(jsonString);

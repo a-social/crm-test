@@ -1,5 +1,4 @@
 import 'package:crm_k/core/widgets/user_detail/V/user_detail_view.dart';
-import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_detail.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/right_bar/communication_notes_page.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/right_bar/management_page.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/right_bar/user_transactions_page.dart';
@@ -9,8 +8,9 @@ import 'package:crm_k/core/widgets/user_detail/other_v/user_info_card.dart';
 
 class PersonelUserDetailPage extends StatefulWidget {
   final User user;
+  final int? index;
 
-  const PersonelUserDetailPage({super.key, required this.user});
+  const PersonelUserDetailPage({super.key, required this.user, this.index});
 
   @override
   _PersonelUserDetailPageState createState() => _PersonelUserDetailPageState();
@@ -23,7 +23,8 @@ class _PersonelUserDetailPageState extends State<PersonelUserDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController =
+        TabController(length: 3, vsync: this, initialIndex: widget.index ?? 0);
   }
 
   @override

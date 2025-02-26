@@ -1,11 +1,12 @@
+import 'package:crm_k/core/config/config.dart';
 import 'package:dio/dio.dart';
 
 class AuthService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080'));
+  final Dio _dio = Dio(BaseOptions(baseUrl: Config.baseUrl));
 
   Future<String?> login(String email, String password) async {
     try {
-      final response = await _dio.post('/admin-login', data: {
+      final response = await _dio.post('/auth/admin-login', data: {
         'email': email,
         'password': password,
       });

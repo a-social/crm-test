@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:crm_k/core/config/config.dart';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/core/service/admin_service.dart';
 import 'package:dio/dio.dart';
@@ -47,12 +48,13 @@ class PersonelProviderSelect extends ChangeNotifier {
 }
 
 class PersonelService with ChangeNotifier {
+  //DÜZENLENECEK yapılan servisimde personelleri getirme gibi bir durum yok personel işlemlerim var ancak personellerimi göremiyorum adminin tüm yetkilere sahip bir backende ihtiyacı var
   final StreamController<List<PersonnelModel>> _controller =
       StreamController<List<PersonnelModel>>.broadcast();
 
   List<PersonnelModel> _personnelList = [];
 
-  final Dio _dio = Dio(BaseOptions(baseUrl: "http://localhost:8080"));
+  final Dio _dio = Dio(BaseOptions(baseUrl: Config.baseUrl));
 
   /// 🔹 **Eski Stream Metodu (UI için halen çalışıyor)**
   Stream<List<PersonnelModel>> getPersonnelStream() => _controller.stream;
@@ -82,6 +84,7 @@ class PersonelService with ChangeNotifier {
   }
 
   /// **📌 Personeli Sil**
+  /// //personel silme işlemi yok düzenlenecek DÜZENLENECEK
   Future<void> deletePersonnel(BuildContext context, String email) async {
     final String? token =
         Provider.of<AdminProvider>(context, listen: false).token;

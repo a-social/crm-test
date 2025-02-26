@@ -21,8 +21,8 @@ class _AdminLoginState extends State<AdminLogin> {
   @override
   void initState() {
     super.initState();
-    emailController.text = 'admin1@example.com';
-    passwordController.text = 'Sqlqkqsmele-';
+    emailController.text = 'admin@crm.com';
+    passwordController.text = 'admintest1234';
   }
 
   Future<void> login() async {
@@ -38,6 +38,9 @@ class _AdminLoginState extends State<AdminLogin> {
     if (token != null) {
       var decodedToken = JwtDecoder.decode(token);
       final String email = decodedToken['sub'];
+      print(email);
+      print('---------');
+      print(decodedToken);
 
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
       adminProvider.setToken(token); // 📌 Token'ı kaydet

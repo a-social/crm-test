@@ -1,5 +1,5 @@
 import 'package:crm_k/core/models/user_model/user_mode.dart';
-import 'package:crm_k/core/widgets/user_detail/V/user_detail_view.dart';
+import 'package:crm_k/screens/admin/auto_user_load/V/auto_user_view.dart';
 import 'package:flutter/material.dart';
 
 class Test2View extends StatefulWidget {
@@ -41,9 +41,7 @@ class _Test2ViewState extends State<Test2View> {
 
   void _showUserDetailDialog() {
     showDialog(
-      context: context,
-      builder: (context) => UserDetailWidget(user: user),
-    );
+        context: context, builder: (context) => AdminFunctionLoadDatButton());
   }
 
   @override

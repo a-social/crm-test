@@ -23,20 +23,20 @@ class PersonelRightPanel extends StatelessWidget {
             alignment: Alignment.topLeft,
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.open_in_full,
-                      size: 30, color: Colors.blue),
-                  onPressed: () {
-                    if (user != null) {
-                      Navigator.push(
-                        context,
-                        ExpandPageRoute(
-                            page: PersonelUserDetailPage(
-                                user: user)), // 🔥 Özel animasyonla aç
-                      );
-                    }
-                  },
-                ),
+                user == null
+                    ? SizedBox.shrink()
+                    : IconButton(
+                        icon: const Icon(Icons.open_in_full,
+                            size: 30, color: Colors.blue),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            ExpandPageRoute(
+                                page: PersonelUserDetailPage(
+                                    user: user)), // 🔥 Özel animasyonla aç
+                          );
+                        },
+                      ),
                 SizedBox.square(
                   dimension: 15,
                 ),

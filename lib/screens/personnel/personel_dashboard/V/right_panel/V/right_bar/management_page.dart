@@ -1,6 +1,12 @@
 import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
+import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
+import 'package:crm_k/screens/personnel/note_screen/V/note_view.dart';
+import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/personel_right_panel_detail.dart';
+import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/VM/right_panel_main_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ManagementPage extends StatefulWidget {
   final User user;
@@ -13,6 +19,17 @@ class ManagementPage extends StatefulWidget {
 
 class _ManagementPageState extends State<ManagementPage> {
   final PersonnelManager manager = PersonnelManager();
+  final RightPanelMainVm rightmodel = RightPanelMainVm();
+  void sendWhatsAppMessage(String phoneNumber) async {
+    String url = "https://web.whatsapp.com/send?phone=$phoneNumber";
+
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      print("WhatsApp Web açılamadı.");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -44,7 +61,14 @@ class _ManagementPageState extends State<ManagementPage> {
                 manager.callCustomer(widget.user.phone ?? '');
               },
             ),
-            _buildActionIcon(Icons.circle, "WhatsApp Gönder", Colors.green),
+            _buildActionIcon(
+              Icons.circle,
+              "WhatsApp Gönder",
+              Colors.green,
+              () {
+                sendWhatsAppMessage(widget.user.phone ?? '');
+              },
+            ),
             _buildActionIcon(
               Icons.email,
               "E-Posta Gönder",
@@ -62,8 +86,29 @@ class _ManagementPageState extends State<ManagementPage> {
           _buildIconWrap([
             _buildActionIcon(
                 Icons.account_balance_wallet, "Hesap Aç", Colors.blue),
-            _buildActionIcon(Icons.attach_money, "Yatırım Ekle", Colors.green),
-            _buildActionIcon(Icons.history, "İşlem Geçmişi", Colors.orange),
+            _buildActionIcon(
+              Icons.attach_money,
+              "Yatırım Ekle",
+              Colors.green,
+              () {
+                rightmodel.addInvestmentAmount(context);
+              },
+            ),
+            _buildActionIcon(
+              Icons.history,
+              "İşlem Geçmişi",
+              Colors.orange,
+              () {
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PersonelUserDetailPage(
+                        user: widget.user,
+                        index: 1,
+                      ),
+                    ));
+              },
+            ),
           ]),
 
           /// **⚙️ Kullanıcı Yönetimi**
@@ -71,16 +116,63 @@ class _ManagementPageState extends State<ManagementPage> {
           _buildIconWrap([
             _buildActionIcon(
                 Icons.assignment_ind, "Temsilci Atama", Colors.purple),
-            _buildActionIcon(Icons.update, "Durum Güncelle", Colors.blueGrey),
-            _buildActionIcon(Icons.block, "Hesabı Askıya Al", Colors.red),
+            _buildActionIcon(
+              Icons.update,
+              "Durum Güncelle",
+              Colors.blueGrey,
+              () {
+                rightmodel.updatePhoneStatusDialog(
+                  context,
+                  widget.user.phoneStatus ?? '',
+                  (p0) {},
+                );
+              },
+            ),
+            _buildActionIcon(
+              Icons.block,
+              "Hesabı Askıya Al",
+              Colors.red,
+              () {
+                final String message =
+                    Provider.of<UserManager>(context, listen: false)
+                        .blockUser(widget.user);
+                rightmodel.showDangerDialog(context, message);
+              },
+            ),
           ]),
 
           /// **📅 Randevu & Not Yönetimi**
-          _buildSectionTitle("📅 Randevu & Notlar"),
+          _buildSectionTitle(
+            "📅 Randevu & Notlar",
+          ),
           _buildIconWrap([
             _buildActionIcon(
-                Icons.calendar_today, "Randevu Planla", Colors.purple),
-            _buildActionIcon(Icons.note_add, "Not Ekle", Colors.blueGrey),
+              Icons.calendar_today,
+              "Randevu Planla",
+              Colors.purple,
+              () {
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DateNoteView(),
+                    ));
+              },
+            ),
+            _buildActionIcon(
+              Icons.note_add,
+              "Not Ekle",
+              Colors.blueGrey,
+              () {
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PersonelUserDetailPage(
+                        user: widget.user,
+                        index: 1,
+                      ),
+                    ));
+              },
+            ),
           ]),
 
           /// **🔔 Hatırlatıcılar & Takvim**

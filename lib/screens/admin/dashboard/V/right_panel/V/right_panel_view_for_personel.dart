@@ -19,24 +19,24 @@ class RightPanelPersonnelView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              icon:
-                  const Icon(Icons.open_in_full, size: 30, color: Colors.blue),
-              onPressed: () {
-                if (personnel != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          PersonelDetailViewPage(personnel: personnel),
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
+          personnel == null
+              ? SizedBox.shrink()
+              : Align(
+                  alignment: Alignment.topLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.open_in_full,
+                        size: 30, color: Colors.blue),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PersonelDetailViewPage(personnel: personnel),
+                        ),
+                      );
+                    },
+                  ),
+                ),
           Center(
             child: Hero(
               tag: 'profile_pic_${personnel?.email}',
@@ -98,7 +98,7 @@ class RightPanelPersonnelView extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          Flexible(child: FastLinkView()),
+          // Flexible(child: FastLinkView()),
         ],
       ),
     );
@@ -111,7 +111,7 @@ class RightPanelPersonnelView extends StatelessWidget {
     );
   }
 
-  /// **📌 Silme Onayı için Dialog**
+  /// **📌 Silme Onayı için Dialog** silme durumu doğru olursa eğer
   void _confirmDelete(BuildContext context, String email) {
     showDialog(
       context: context,

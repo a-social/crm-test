@@ -17,8 +17,10 @@ import 'package:provider/provider.dart';
 import 'package:crm_k/core/widgets/loading_view/VM/loading_viewmodule.dart';
 import 'package:crm_k/screens/admin/home_screen/V/home_screen_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/VM/login_screen_viewmodule.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
 
   runApp(const MyApp());
@@ -48,6 +50,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FilterProvider()),
       ],
       child: MaterialApp(
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: [Locale('tr', 'TR')],
+        locale: Locale('tr', 'TR'),
         debugShowCheckedModeBanner: false,
         navigatorKey: GlobalKey<NavigatorState>(),
         theme: MaterialTheme(TextTheme.of(context)).light().copyWith(
