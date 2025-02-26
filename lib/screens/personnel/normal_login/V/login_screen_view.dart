@@ -1,9 +1,5 @@
-import 'package:crm_k/core/icons/unit_icons.dart';
-import 'package:crm_k/core/lang/unit_strings.dart';
-import 'package:crm_k/core/service/personel_service.dart';
-import 'package:crm_k/core/widgets/loading_view/V/loading_indicator_project_view.dart';
+import 'package:crm_k/screens/personnel/home_screen/V/home_screen_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/VM/login_screen_viewmodule.dart';
-import 'package:crm_k/screens/personnel/personel_home_screen/V/personel_home_screen_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,133 +13,113 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
-    _emailController.text = 'erkem@company.com';
-    _passwordController.text = 'AsAs12';
+    _emailController.text = "orne22k@ornek.com";
+    _passwordController.text = "123654";
   }
 
-  bool _obscurePassword = true;
-  bool _isLoading = false; // Sınıf değişkeni olarak tanımla!
+  void _submitLogin(LoginViewModel loginVM) async {
+    bool success = await loginVM.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PersonelHomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loginVM.errorMessage ?? "Giriş başarısız!")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final loginVM = Provider.of<LoginViewModel>(context);
-
     return Scaffold(
-      body: Stack(
-        children: [
-          Center(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 5,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             child: Container(
-              padding: EdgeInsets.all(20),
               width: 350,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(UnitStrings.loginText,
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 20),
-
-                  // E-posta Alanı
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: UnitStrings.loginMail,
-                      hintText: UnitStrings.loginMailHint,
-                      prefixIcon: UnitIcons.loginMailIcon,
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 15),
-
-                  // Şifre Alanı
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: UnitStrings.loginPassword,
-                      hintText: UnitStrings.loginPasswordHint,
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+              padding: const EdgeInsets.all(20),
+              child: Consumer<LoginViewModel>(
+                builder: (context, loginVM, child) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Giriş Yap",
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
-                  // Giriş Butonu
-                  ElevatedButton(
-                    onPressed: () async {
-                      setState(() {
-                        _isLoading = true; // Loading ekranını aç
-                      });
-
-                      bool success = await loginVM.loginPersonnel(
-                        _emailController.text.trim(),
-                        _passwordController.text.trim(),
-                      );
-
-                      if (success) {
-                        final personnelProvider =
-                            Provider.of<PersonnelProvider>(context,
-                                listen: false);
-                        await personnelProvider
-                            .fetchPersonnel(_emailController.text.trim());
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Giriş başarılı!")),
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => PersonelHomeScreen()),
-                        );
-                      }
-
-                      setState(() {
-                        _isLoading = false; // Loading ekranını kapat
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                    ),
-                    child: Text("Giriş Yap"),
-                  ),
-                  SizedBox(height: 10),
-                  // Hata Mesajı (Eğer hata varsa)
-                  if (loginVM.errorMessage != null)
-                    Text(
-                      loginVM.errorMessage!,
-                      style: TextStyle(color: Colors.red, fontSize: 14),
-                    ),
-                ],
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: "E-posta",
+                          prefixIcon: Icon(Icons.email),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: "Şifre",
+                          prefixIcon: const Icon(Icons.lock),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: loginVM.isLoading
+                            ? null
+                            : () => _submitLogin(loginVM),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                        child: loginVM.isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : const Text("Giriş Yap"),
+                      ),
+                      if (loginVM.errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Text(
+                            loginVM.errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
-          if (_isLoading)
-            LoadingView(
-                loading_value: _isLoading), // Sadece true olduğunda göster
-        ],
+        ),
       ),
     );
   }

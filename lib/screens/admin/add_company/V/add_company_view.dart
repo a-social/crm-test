@@ -73,7 +73,11 @@ class _AddCompanyState extends State<AddCompany> {
         _websiteController.clear();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Firma eklenirken hata oluştu.")),
+          SnackBar(
+            content:
+                Text(viewModel.errorMessage ?? "Bilinmeyen bir hata oluştu."),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -81,71 +85,78 @@ class _AddCompanyState extends State<AddCompany> {
 
   @override
   Widget build(BuildContext context) {
-    final AdminProvider provider =
-        Provider.of<AdminProvider>(context, listen: false);
-
-    return ChangeNotifierProvider(
-      create: (_) => AddCompanyViewModel(token: provider.token ?? 'null'),
-      child: Consumer<AddCompanyViewModel>(
-        builder: (context, viewModel, child) {
-          return Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(child: SizedBox.shrink()),
-                  Expanded(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(child: SizedBox.shrink()),
-                          Card(
-                            child: Container(
-                              padding: EdgeInsets.all(15),
-                              child: Column(
-                                children: [
-                                  _buildTextField(_nameController, "Firma Adı",
-                                      Icons.business),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(
-                                      _emailController, "E-Posta", Icons.email),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(_addressController, "Adres",
-                                      Icons.location_on),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(
-                                      _phoneController, "Telefon", Icons.phone),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(_websiteController,
-                                      "Web Sitesi", Icons.web),
-                                  const SizedBox(height: 20),
-                                  viewModel.isLoading
-                                      ? const CircularProgressIndicator()
-                                      : ElevatedButton(
-                                          onPressed: () =>
-                                              _showConfirmationDialog(
-                                                  viewModel),
-                                          child: const Text("Firma Ekle"),
-                                        ),
-                                ],
+    final AdminProvider? provider =
+        Provider.of<AdminProvider?>(context, listen: false);
+    if (provider == null || provider.token == null) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    } else {
+      return ChangeNotifierProvider(
+        create: (_) => AddCompanyViewModel(token: provider.token ?? 'null'),
+        child: Consumer<AddCompanyViewModel>(
+          builder: (context, viewModel, child) {
+            return Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(child: SizedBox.shrink()),
+                    Expanded(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(child: SizedBox.shrink()),
+                            Card(
+                              child: Container(
+                                padding: EdgeInsets.all(15),
+                                child: Column(
+                                  children: [
+                                    _buildTextField(_nameController,
+                                        "Firma Adı", Icons.business),
+                                    const SizedBox(height: 10),
+                                    _buildTextField(_emailController, "E-Posta",
+                                        Icons.email),
+                                    const SizedBox(height: 10),
+                                    _buildTextField(_addressController, "Adres",
+                                        Icons.location_on),
+                                    const SizedBox(height: 10),
+                                    _buildTextField(_phoneController, "Telefon",
+                                        Icons.phone),
+                                    const SizedBox(height: 10),
+                                    _buildTextField(_websiteController,
+                                        "Web Sitesi", Icons.web),
+                                    const SizedBox(height: 20),
+                                    viewModel.isLoading
+                                        ? const CircularProgressIndicator()
+                                        : ElevatedButton(
+                                            onPressed: () =>
+                                                _showConfirmationDialog(
+                                                    viewModel),
+                                            child: const Text("Firma Ekle"),
+                                          ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          Expanded(child: SizedBox.shrink()),
-                        ],
+                            Expanded(child: SizedBox.shrink()),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(child: SizedBox.shrink()),
-                ],
+                    Expanded(child: SizedBox.shrink()),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
+    }
   }
 
   Widget _buildTextField(

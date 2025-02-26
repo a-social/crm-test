@@ -1,4 +1,4 @@
-import 'package:crm_k/core/service/personel_service.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
 import 'package:crm_k/core/widgets/drawer/V/drawer_view.dart';
 import 'package:crm_k/core/widgets/live_clock/V/live_clock_view.dart';
 import 'package:crm_k/screens/404/V/404.dart';
@@ -18,10 +18,10 @@ class _PersonelHomeScreenState extends State<PersonelHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final personel = Provider.of<PersonnelProvider>(context).personel;
+    final isPersonel = Provider.of<AuthProvider>(context).isPersonnel;
 
-    // Kullanıcı admin değilse, 404 sayfasına yönlendir
-    if (personel == null) {
+    // 📌 Eğer personel bilgisi yoksa 404 sayfasına yönlendir
+    if (!isPersonel) {
       return const PageNotFoundScreen();
     }
 

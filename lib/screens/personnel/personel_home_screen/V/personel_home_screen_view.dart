@@ -1,4 +1,4 @@
-import 'package:crm_k/core/service/personel_service.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
 import 'package:crm_k/screens/404/V/404.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,11 +18,10 @@ class _PersonelHomeScreenState extends State<PersonelHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final personnel = Provider.of<PersonnelProvider>(context).personel;
+    final isPersonel = Provider.of<AuthProvider>(context).isPersonnel;
 
     // 📌 Eğer personel bilgisi yoksa 404 sayfasına yönlendir
-    if (personnel == null) {
-      print('------$personnel');
+    if (!isPersonel) {
       return const PageNotFoundScreen();
     }
 

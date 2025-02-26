@@ -1,7 +1,8 @@
 import 'package:crm_k/core/config/config.dart';
 import 'package:dio/dio.dart';
+//silinecek
 
-class AuthService {
+class AuthAdminService {
   final Dio _dio = Dio(BaseOptions(baseUrl: Config.baseUrl));
 
   Future<String?> login(String email, String password) async {

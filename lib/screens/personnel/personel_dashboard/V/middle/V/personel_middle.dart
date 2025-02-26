@@ -1,7 +1,6 @@
-import 'package:crm_k/core/service/personel_service.dart';
-import 'package:crm_k/screens/admin/dashboard/V/middle/V/middle_view.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
+import 'package:crm_k/screens/404/V/404.dart';
 import 'package:crm_k/screens/admin/dashboard/V/middle/graphics_view.dart';
-import 'package:crm_k/screens/personnel/my_customers/V/my_customers_view.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/middle/V/list_user_for_personel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,14 +10,11 @@ class PersonelMainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final personel = Provider.of<PersonnelProvider>(context).personel;
-    if (personel == null) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/404',
-        (route) => false,
-      );
-      return SizedBox();
+    final isPersonel = Provider.of<AuthProvider>(context).isPersonnel;
+
+    // 📌 Eğer personel bilgisi yoksa 404 sayfasına yönlendir
+    if (!isPersonel) {
+      return const PageNotFoundScreen();
     } else {
       return Padding(
           padding: const EdgeInsets.all(16.0),

@@ -1,3 +1,4 @@
+import 'package:crm_k/core/service/admin_service.dart';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/screens/admin/add_person/VM/admin_add_person_viewmodule.dart';
 import 'package:flutter/material.dart';
@@ -17,116 +18,130 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String _role = "personel"; // Varsayılan rol
-  final bool _isAdmin = true; // 📌 Şimdilik herkes admin olarak kabul ediliyor
+
+  void _submitForm(PersonnelAddViewModel viewModel) async {
+    if (_formKey.currentState!.validate()) {
+      bool success = await viewModel.addPersonnel(
+        PersonnelModel(
+          id: DateTime.now().millisecondsSinceEpoch, // Geçici ID
+          name: _nameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+          phone: _phoneController.text,
+          role: _role,
+          assignedCustomers: [],
+          totalInvestment: 0,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success
+              ? "✅ Personel başarıyla eklendi!"
+              : viewModel.errorMessage ?? "Bilinmeyen bir hata oluştu."),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+
+      if (success) {
+        _formKey.currentState!.reset();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final personnelVM =
-        Provider.of<PersonnelAddViewModel>(context, listen: false);
+    return ChangeNotifierProvider(
+      create: (_) => PersonnelAddViewModel(
+        token: Provider.of<AdminProvider>(context, listen: false).token ?? '',
+      ),
+      child: Consumer<PersonnelAddViewModel>(
+        builder: (context, viewModel, child) {
+          return Scaffold(
+            appBar: AppBar(title: const Text("Personel Ekle")),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width > 600
+                        ? 500
+                        : double.infinity, // Responsive tasarım
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildTextField(
+                              _nameController, "Ad Soyad", Icons.person),
+                          _buildTextField(
+                              _emailController, "E-posta", Icons.email),
+                          _buildTextField(
+                              _phoneController, "Telefon", Icons.phone),
+                          _buildTextField(
+                              _passwordController, "Şifre", Icons.lock,
+                              obscureText: true),
+                          const SizedBox(height: 10),
 
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 5,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            child: Container(
-              width: MediaQuery.of(context).size.width > 600
-                  ? 500
-                  : double.infinity, // 📌 Responsive tasarım
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTextField(_nameController, "Ad Soyad", Icons.person),
-                    _buildTextField(_emailController, "E-posta", Icons.email),
-                    _buildTextField(_phoneController, "Telefon", Icons.phone),
-                    _buildTextField(_passwordController, "Şifre", Icons.lock,
-                        obscureText: true),
-                    const SizedBox(height: 10),
+                          // 📌 Rol Seçimi (Dropdown)
+                          DropdownButtonFormField<String>(
+                            value: _role,
+                            items: ["personel"]
+                                .map((role) => DropdownMenuItem(
+                                      value: role,
+                                      child: Text(role.toUpperCase()),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _role = value!;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              labelText: "Rol",
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.admin_panel_settings),
+                            ),
+                          ),
 
-                    // 📌 Rol Seçimi (Dropdown)
-                    DropdownButtonFormField<String>(
-                      value: _role,
-                      items: ["personel"]
-                          .map((role) => DropdownMenuItem(
-                                value: role,
-                                child: Text(role.toUpperCase()),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _role = value!;
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        labelText: "Rol",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.admin_panel_settings),
+                          const SizedBox(height: 20),
+
+                          // 📌 Gelişmiş Buton Tasarımı
+                          ElevatedButton(
+                            onPressed: viewModel.isLoading
+                                ? null
+                                : () => _submitForm(viewModel),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: viewModel.isLoading
+                                  ? Colors.grey
+                                  : Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 30, vertical: 16),
+                              textStyle: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: viewModel.isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : const Text("Personel Ekle"),
+                          ),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // 📌 Gelişmiş Buton Tasarımı
-                    ElevatedButton(
-                      onPressed: _isAdmin
-                          ? () {
-                              if (_formKey.currentState!.validate()) {
-                                personnelVM.addPersonnel(PersonnelModel(
-                                  id: DateTime.now().millisecondsSinceEpoch,
-                                  name: _nameController.text,
-                                  email: _emailController.text,
-                                  password: _passwordController.text,
-                                  phone: _phoneController.text,
-                                  role: _role,
-                                  assignedCustomers: [],
-                                  totalInvestment: 0,
-                                  createdAt: DateTime.now(),
-                                ));
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "✅ Personel başarıyla eklendi!")),
-                                );
-
-                                _formKey.currentState!.reset();
-                              }
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isAdmin ? Colors.blue : Colors.grey,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 16),
-                        textStyle: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text("Personel Ekle"),
-                    ),
-
-                    if (!_isAdmin)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: Text(
-                          "❌ Sadece adminler personel ekleyebilir!",
-                          style: TextStyle(
-                              color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -137,7 +152,6 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
     String label,
     IconData icon, {
     bool obscureText = false,
-    String type = "",
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -150,7 +164,9 @@ class _PersonnelAddScreenState extends State<PersonnelAddScreen> {
         ),
         obscureText: obscureText,
         validator: (value) {
-          value!.isEmpty ? "Bu alan boş bırakılamaz" : null;
+          if (value == null || value.isEmpty) {
+            return "$label boş bırakılamaz";
+          }
           return null;
         },
       ),

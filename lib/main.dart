@@ -1,6 +1,8 @@
 import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/service/admin_service.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
 import 'package:crm_k/core/service/filter_service.dart';
+import 'package:crm_k/core/service/login_service.dart';
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/core/service/user_service.dart';
 import 'package:crm_k/screens/404/V/404.dart';
@@ -34,20 +36,25 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LoadingProvider()),
-        ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => AdminService()),
         ChangeNotifierProvider(create: (_) => PersonnelProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => UserAddViewModel()),
-        ChangeNotifierProvider(create: (_) => PersonnelAddViewModel()),
         ChangeNotifierProvider(create: (_) => PersonelProviderSelect()),
         ChangeNotifierProvider(create: (_) => PersonelService()),
         ChangeNotifierProvider(create: (_) => UserManager()),
         ChangeNotifierProvider(create: (_) => ChatViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
 
         //---
         ChangeNotifierProvider(create: (_) => FilterProvider()),
+        ChangeNotifierProvider(
+          create: (context) => LoginViewModel(
+            loginService: LoginService(),
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          ),
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: GlobalMaterialLocalizations.delegates,

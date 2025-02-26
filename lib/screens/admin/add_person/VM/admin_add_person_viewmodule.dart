@@ -1,28 +1,41 @@
-import 'package:crm_k/core/models/admin_model/manager/admin_manager.dart';
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:flutter/material.dart';
 
 class PersonnelAddViewModel extends ChangeNotifier {
-  final AdminManager _adminManager = AdminManager(); // Admin kontrolü
-  final List<PersonnelModel> _personnelList = []; // Eklenen personelleri tutar
+  final PersonelMainManager _personnelManager;
+  bool isLoading = false;
+  String? errorMessage;
 
-  bool isAdmin = true; // 📌 Şimdilik her kullanıcı admin olarak simüle ediliyor
+  PersonnelAddViewModel({required String token})
+      : _personnelManager = PersonelMainManager(token: token);
 
-  // Yeni personel ekleme
-  void addPersonnel(PersonnelModel personnel) {
-    if (!isAdmin) {
-      print("❌ Yetkisiz işlem! Sadece adminler personel ekleyebilir.");
-      return;
-    }
-    _personnelList.add(personnel);
-    print("✅ Personel eklendi: ${personnel.name}");
+  Future<bool> addPersonnel(PersonnelModel personnel) async {
+    isLoading = true;
+    errorMessage = null;
     notifyListeners();
-  }
 
-  // Admin kontrolü (ileride genişletilebilir)
-  bool checkIfAdmin(String email) {
-    return _adminManager.adminExists(email);
-  }
+    try {
+      bool success = await _personnelManager.addPersonnel(
+        name: personnel.name,
+        email: personnel.email,
+        password: personnel.password,
+        phone: personnel.phone,
+        role: personnel.role,
+      );
 
-  List<PersonnelModel> get allPersonnel => List.unmodifiable(_personnelList);
+      if (!success) {
+        errorMessage = "Personel eklenemedi, lütfen tekrar deneyin.";
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      isLoading = false;
+      errorMessage = "Bağlantı hatası! Sunucuya ulaşılamıyor.";
+      notifyListeners();
+      return false;
+    }
+  }
 }

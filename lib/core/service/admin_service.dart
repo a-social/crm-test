@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crm_k/core/config/config.dart';
 import 'package:crm_k/core/models/admin_model/admin_model.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:dio/dio.dart';
@@ -51,7 +52,7 @@ class AdminService with ChangeNotifier {
   /// **Token'ı Güncelleyen Metot**
   void updateToken(String token) {
     _dio = Dio(BaseOptions(
-      baseUrl: "http://localhost:8080",
+      baseUrl: Config.baseUrl,
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token", // 🔹 Token'ı güncelledik
@@ -68,7 +69,7 @@ class AdminService with ChangeNotifier {
 
     try {
       Response response = await _dio.post(
-        "/add-user",
+        "/customers",
         data: jsonEncode(user.toJson()),
       );
 

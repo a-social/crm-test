@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/widgets/drawer/F/drawer_viewmodel.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DynamicDrawer extends StatelessWidget {
   final Function(Widget) onMenuSelected;
@@ -38,8 +39,30 @@ class DynamicDrawer extends StatelessWidget {
               }).toList(),
             ),
           ),
+          OpenLinkButton()
         ],
       ),
+    );
+  }
+}
+
+class OpenLinkButton extends StatelessWidget {
+  const OpenLinkButton({super.key});
+
+  void _launchURL() async {
+    const url = 'https://google.com'; // Buraya istediğin linki koy
+    if (await canLaunch(url)) {
+      await launch(url, forceSafariVC: false, forceWebView: false);
+    } else {
+      throw 'Bağlantı açılamadı: $url';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: _launchURL,
+      child: const Text('Linki Aç'),
     );
   }
 }

@@ -22,18 +22,19 @@ class DeleteCompanyView extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Dialog'u kapat
+              Navigator.pop(context); // Onay ekranını kapat
+              showDeletingDialog(mainContext); // ✅ Silme işlemi ekranı aç
               bool success = await mainContext
                   .read<DeleteCompanyViewModel>()
                   .deleteCompany(companyId);
 
+              Navigator.pop(mainContext); // ✅ Silme ekranını kapat
+
               if (!success) {
-                final errorMessage =
-                    mainContext.read<DeleteCompanyViewModel>().errorMessage ??
-                        "Bilinmeyen bir hata oluştu.";
                 ScaffoldMessenger.of(mainContext).showSnackBar(
-                  SnackBar(
-                      content: Text(errorMessage), backgroundColor: Colors.red),
+                  const SnackBar(
+                      content: Text("Şirket silinirken hata oluştu."),
+                      backgroundColor: Colors.red),
                 );
               }
             },
@@ -41,6 +42,27 @@ class DeleteCompanyView extends StatelessWidget {
             child: const Text("Evet, Sil"),
           ),
         ],
+      ),
+    );
+  }
+
+  void showDeletingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // ✅ Kullanıcı ekranı kapatamaz!
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // ✅ Geri tuşu çalışmaz
+        child: AlertDialog(
+          title: const Text("Silme İşlemi"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Şirket siliniyor..."),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -53,78 +75,73 @@ class DeleteCompanyView extends StatelessWidget {
             token:
                 Provider.of<AdminProvider>(context, listen: false).token ?? ''),
       )..fetchCompanies(),
-      child: Builder(
-        // Builder ekleyerek context'i güncelliyoruz
-        builder: (context) {
+      child: Consumer<DeleteCompanyViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
           return Scaffold(
-            body: Consumer<DeleteCompanyViewModel>(
-              builder: (context, viewModel, child) {
-                if (viewModel.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            body: viewModel.companies.isEmpty
+                ? const Center(child: Text("Şirket bulunamadı."))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: viewModel.companies.length,
+                    itemBuilder: (context, index) {
+                      final company = viewModel.companies[index];
 
-                if (viewModel.companies.isEmpty) {
-                  return const Center(child: Text("Şirket bulunamadı."));
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: viewModel.companies.length,
-                  itemBuilder: (context, index) {
-                    final company = viewModel.companies[index];
-
-                    return Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              company.name ?? "Bilinmeyen",
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text("📧 ${company.email ?? 'Yok'}"),
-                            Text("📍 ${company.address ?? 'Yok'}"),
-                            Text("📞 ${company.phone ?? 'Yok'}"),
-                            Text(
-                              "🌐 ${company.website ?? 'Yok'}",
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  showDeleteDialog(context, company.id,
-                                      company.name ?? "Bu şirket");
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text("Sil"),
-                              ),
-                            ),
-                          ],
+                      return Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                company.name ?? "Bilinmeyen",
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text("📧 ${company.email ?? 'Yok'}"),
+                              Text("📍 ${company.address ?? 'Yok'}"),
+                              Text("📞 ${company.phone ?? 'Yok'}"),
+                              Text(
+                                "🌐 ${company.website ?? 'Yok'}",
+                                style: const TextStyle(
+                                  color: Colors.blue,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    showDeleteDialog(context, company.id,
+                                        company.name ?? "Bu şirket");
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text("Sil"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           );
         },
       ),

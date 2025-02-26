@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class AddCompanyViewModel extends ChangeNotifier {
   final CompanyManager _companyManager;
   bool isLoading = false;
+  String? errorMessage; // ✅ Hata mesajı eklendi
 
   AddCompanyViewModel({required String token})
       : _companyManager = CompanyManager(token: token);
@@ -15,10 +16,11 @@ class AddCompanyViewModel extends ChangeNotifier {
     required String phone,
     required String website,
   }) async {
-    try {
-      isLoading = true;
-      notifyListeners();
+    isLoading = true;
+    errorMessage = null; // Hata mesajını sıfırla
+    notifyListeners();
 
+    try {
       bool success = await _companyManager.addCompany(
         name: name,
         email: email,
@@ -27,14 +29,18 @@ class AddCompanyViewModel extends ChangeNotifier {
         website: website,
       );
 
+      if (!success) {
+        errorMessage =
+            "Firma eklenirken hata oluştu. API eksik veri kaydediyor olabilir.";
+      }
+
       isLoading = false;
       notifyListeners();
-
       return success;
     } catch (e) {
       isLoading = false;
+      errorMessage = "Bağlantı hatası! Sunucuya ulaşılamıyor.";
       notifyListeners();
-      print('Firma eklenirken hata oluştu: $e');
       return false;
     }
   }

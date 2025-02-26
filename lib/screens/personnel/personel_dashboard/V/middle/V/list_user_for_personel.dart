@@ -1,8 +1,9 @@
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:crm_k/core/models/user_model/managers/user_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
 import 'package:crm_k/core/service/filter_service.dart';
 import 'package:crm_k/core/service/user_service.dart';
-import 'package:crm_k/core/widgets/search/V/search_widget.dart';
 import 'package:crm_k/core/widgets/user_detail/V/user_detail_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +19,7 @@ class PersonelsUserListScreenView extends StatefulWidget {
 class _PersonelsUserListScreenViewState
     extends State<PersonelsUserListScreenView> {
   late Future<List<User>> _usersFuture;
-  String _searchQuery = ""; // 📌 Arama sorgusu
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -27,7 +28,10 @@ class _PersonelsUserListScreenViewState
   }
 
   void _fetchUsers() {
-    _usersFuture = UserManagerTest.fetchUsersFromJson();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final personelManager = PersonelMainManager(token: authProvider.token);
+    _usersFuture = personelManager.fetchAssignedCustomers(context);
     setState(() {});
   }
 
@@ -38,9 +42,13 @@ class _PersonelsUserListScreenViewState
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SearchBarWidget(
-              hintText: "Arama Yap...",
-              onSearch: (query) {
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: "Arama Yap...",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (query) {
                 setState(() {
                   _searchQuery = query.toLowerCase();
                 });
@@ -48,9 +56,7 @@ class _PersonelsUserListScreenViewState
             ),
           ),
           const SizedBox(height: 10),
-
-          _buildHeader(context), // 📌 Header korundu
-
+          _buildHeader(context),
           Expanded(
             child: FutureBuilder<List<User>>(
               future: _usersFuture,
@@ -60,10 +66,10 @@ class _PersonelsUserListScreenViewState
                 } else if (snapshot.hasError) {
                   return Center(child: Text("Hata: ${snapshot.error}"));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("Hiç kullanıcı yok."));
+                  return const Center(
+                      child: Text("Atanmış müşteri bulunamadı."));
                 }
 
-                // 📌 **Filtrelenmiş Kullanıcı Listesi**
                 final users = snapshot.data!
                     .where((user) =>
                         user.name.toLowerCase().contains(_searchQuery) ||
@@ -89,68 +95,34 @@ class _PersonelsUserListScreenViewState
     );
   }
 
-  /// 📌 **Başlık Satırı (Logo | İsim | Mail | Telefon Durumu)**
   Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: theme.primaryContainer,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadow.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      color: Colors.blue.shade100,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Icon(Icons.account_circle, size: 24, color: Color(0xff004e5c)),
+        children: const [
+          Icon(Icons.account_circle, size: 24, color: Color(0xff004e5c)),
           Expanded(
-            child: Text(
-              "İsim",
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.onPrimaryContainer,
-                  ),
-            ),
-          ),
+              child: Text("İsim",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold))),
           Expanded(
-            child: Text(
-              "Mail",
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.onPrimaryContainer,
-                  ),
-            ),
-          ),
-          Expanded(flex: 3, child: SizedBox()),
-          Text(
-            "Telefon",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.onPrimaryContainer,
-                ),
-          ),
+              child: Text("Mail",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+          Text("Telefon", style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  /// 📌 **Kullanıcı Kartı (Tasarım Aynı)**
   Widget _buildUserCard(BuildContext context, User user) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
@@ -161,41 +133,25 @@ class _PersonelsUserListScreenViewState
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 child: Text(
-                  user.name.isNotEmpty ? user.name[0].toUpperCase() : "?",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : "?"),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Text(
-                      user.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    Text(
-                      user.email,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
+                    Text(user.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(user.email, style: TextStyle(color: Colors.grey[600])),
                   ],
                 ),
               ),
-              Expanded(flex: 2, child: SizedBox()),
-              Text(user.phoneStatus ?? 'None'),
               const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Theme.of(context).colorScheme.primary,
-                size: 18,
-              ),
+              Text(user.phoneStatus ?? 'None'),
+              const Icon(Icons.arrow_forward_ios, size: 18),
             ],
           ),
         ),

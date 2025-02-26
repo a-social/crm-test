@@ -37,13 +37,19 @@ class CompanyManager {
     required String website,
   }) async {
     try {
-      final response = await _dio.post('/companies', data: {
+      final data = {
         'name': name,
-        'mail': email,
         'address': address,
         'phone': phone,
-        'website': website,
-      });
+        'email': email, // ✅ API "email" bekliyor
+        'website': website, // ✅ API "website" bekliyor
+      };
+
+      print("API'ye gönderilen JSON: $data"); // ✅ Terminale yazdır
+
+      final response = await _dio.post('/companies', data: data);
+
+      print("API Yanıtı: ${response.data}"); // ✅ API'nin dönüşünü kontrol et
 
       return response.statusCode == 201;
     } catch (e) {
@@ -54,7 +60,7 @@ class CompanyManager {
 
   /// Firma bilgilerini güncelleme
   Future<bool> updateCompany({
-    required int id,
+    required String id,
     required String name,
     required String email,
     required String address,

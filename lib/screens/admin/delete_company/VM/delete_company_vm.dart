@@ -6,8 +6,7 @@ class DeleteCompanyViewModel extends ChangeNotifier {
   final CompanyManager _companyManager;
   List<CompanyModel> companies = [];
   bool isLoading = false;
-  bool isDeleting = false;
-  String? errorMessage; // ❌ Yeni hata mesajı değişkeni
+  bool isDeleting = false; // ✅ Silme işlemi aktif mi?
 
   DeleteCompanyViewModel(this._companyManager);
 
@@ -15,38 +14,25 @@ class DeleteCompanyViewModel extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    try {
-      final response = await _companyManager.getCompanies();
-      companies = response.map((e) => CompanyModel.fromJson(e)).toList();
-    } catch (e) {
-      errorMessage =
-          "Şirketleri çekerken hata oluştu. Lütfen internet bağlantınızı kontrol edin.";
-    }
+    final response = await _companyManager.getCompanies();
+    companies = response.map((e) => CompanyModel.fromJson(e)).toList();
 
     isLoading = false;
     notifyListeners();
   }
 
   Future<bool> deleteCompany(String id) async {
-    isDeleting = true;
-    errorMessage = null;
+    isDeleting = true; // ✅ Silme işlemi başladı
     notifyListeners();
 
-    try {
-      bool success = await _companyManager.deleteCompany(id);
-      if (success) {
-        companies.removeWhere((company) => company.id == id);
-        notifyListeners();
-        return true;
-      } else {
-        errorMessage = "Şirket silinemedi. Lütfen tekrar deneyin.";
-      }
-    } catch (e) {
-      errorMessage = "Bağlantı hatası! Sunucuya ulaşılamıyor.";
+    bool success = await _companyManager.deleteCompany(id);
+
+    if (success) {
+      companies.removeWhere((company) => company.id == id);
     }
 
-    isDeleting = false;
+    isDeleting = false; // ✅ Silme işlemi bitti
     notifyListeners();
-    return false;
+    return success;
   }
 }

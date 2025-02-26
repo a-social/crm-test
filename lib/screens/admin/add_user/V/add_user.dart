@@ -24,13 +24,18 @@ class UserAddScreen extends StatelessWidget {
             // 📌 Kime Bağlı? (Dropdown)
             DropdownButtonFormField<String>(
               value: userAddVM.assignedTo,
-              items:
-                  ["", "zeynep@gmail.com", "ahmet@gmail.com", "admin@gmail.com"]
-                      .map((e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e.isEmpty ? "Kimseye Bağlı Değil" : e),
-                          ))
-                      .toList(),
+              items: [
+                "",
+                "zeynep@gmail.com",
+                "ahmet@gmail.com",
+                "admin@gmail.com",
+                "orne22k@ornek.com"
+              ]
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e.isEmpty ? "Kimseye Bağlı Değil" : e),
+                      ))
+                  .toList(),
               onChanged: userAddVM.setAssignedTo,
               decoration: const InputDecoration(
                 labelText: "Kime Bağlı?",

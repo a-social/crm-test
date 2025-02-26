@@ -15,7 +15,7 @@ class AdminLogin extends StatefulWidget {
 class _AdminLoginState extends State<AdminLogin> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final AuthService authService = AuthService();
+  final AuthAdminService authService = AuthAdminService();
   bool isLoading = false;
 
   @override

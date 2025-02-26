@@ -3,36 +3,15 @@ import 'dart:convert';
 import 'package:crm_k/core/config/config.dart';
 import 'package:crm_k/core/models/personel_model/personel_model.dart';
 import 'package:crm_k/core/service/admin_service.dart';
+import 'package:crm_k/core/service/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
 class PersonnelProvider extends ChangeNotifier {
-  PersonnelModel? _personel;
-
-  PersonnelModel? get personel => _personel;
-
-  Future<void> fetchPersonnel(String email) async {
-    try {
-      //şimdilik localde çalışıyor sonrasında databaseden gelen veri üzerine çalışılacak
-      String jsonString = await rootBundle.loadString('assets/personnel.json');
-      List<dynamic> jsonData = json.decode(jsonString);
-
-      var foundPersonel = jsonData.firstWhere(
-        (personnel) => personnel['email'] == email,
-        orElse: () => null,
-      );
-
-      if (foundPersonel != null) {
-        _personel = PersonnelModel.fromJson(foundPersonel);
-        notifyListeners(); // UI'yi güncelle
-      } else {
-        _personel = null; // Eğer personel bulunmazsa temizle
-      }
-    } catch (e) {
-      print("personnel verisi yüklenirken hata oluştu: $e");
-    }
+  bool isPersonnel(BuildContext context) {
+    return Provider.of<AuthProvider>(context, listen: false).isPersonnel;
   }
 }
 
