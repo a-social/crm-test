@@ -1,493 +1,916 @@
+// ignore_for_file: avoid_print, prefer_interpolation_to_compose_strings, implicit_call_tearoffs, unused_local_variable, prefer_conditional_assignment
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 import 'package:jaguar_jwt/jaguar_jwt.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:crypto/crypto.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:uuid/uuid.dart';
+import 'package:shelf_router/shelf_router.dart';
+import 'dart:collection';
+import 'dart:async';
+import 'dart:math';
+
+final Map<String, List<DateTime>> _requestLogs = HashMap();
+const int maxRequests = 10;
+const Duration timeFrame = Duration(minutes: 1);
+
+final Map<String, List<DateTime>> _formRequestLogs = HashMap();
+
+// 🔹 Eski logları düzenli olarak temizleyen Timer
+void _cleanOldRequests() {
+  final now = DateTime.now();
+  _requestLogs.forEach((ip, timestamps) {
+    timestamps
+        .removeWhere((timestamp) => now.difference(timestamp) > timeFrame);
+  });
+
+  // Eğer companiesCollection zaten başlatılmışsa tekrar başlatma!
+  if (companiesCollection == null) {
+    companiesCollection = db.collection('companies');
+  }
+}
+
+// 🔹 Rate Limiter Middleware (Geliştirilmiş)
+Middleware rateLimiter() {
+  Timer.periodic(Duration(minutes: 5), (timer) {
+    try {
+      _cleanOldRequests();
+    } catch (e) {
+      print("Rate Limiter Hatası: $e"); // 🔥 Olası hataları yakala ve logla
+    }
+  });
+
+  return (Handler innerHandler) {
+    return (Request request) async {
+      // 🔹 IP Adresini Daha Güvenli Bir Şekilde Al
+      final String ip = request.headers['x-forwarded-for'] ??
+          request.context['remote_ip']?.toString() ??
+          (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+              ?.remoteAddress
+              .address ??
+          'unknown';
+
+      final now = DateTime.now();
+      _requestLogs.putIfAbsent(ip, () => []);
+
+      // 🔹 Eski istekleri temizle
+      _requestLogs[ip]!
+          .removeWhere((timestamp) => now.difference(timestamp) > timeFrame);
+
+      if (_requestLogs[ip]!.length >= maxRequests) {
+        return Response(
+          429,
+          body: jsonEncode(
+              {"error": "Çok fazla istek attınız. Lütfen bir süre bekleyin!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      _requestLogs[ip]!.add(now);
+      return innerHandler(request);
+    };
+  };
+}
+
+final String serverSecret =
+    Uuid().v4(); // Her sunucu başlatıldığında farklı olur!
+
+JwtClaim? verifyAndDecodeJWTWithServerSecret(String token) {
+  try {
+    final JwtClaim claimSet = verifyJwtHS256Signature(token, secretKey);
+    claimSet.validate(issuer: 'crm_server');
+
+    // 📌 Token önceki sunucu başlatılmasında oluşturulmuşsa geçersiz yap!
+    if (claimSet.toJson()['server_secret'] != serverSecret) {
+      return null;
+    }
+
+    return claimSet;
+  } catch (e) {
+    print("JWT doğrulama hatası: $e");
+    return null;
+  }
+}
 
 final env = DotEnv()..load();
 
-// 🔐 Güvenli JWT Yönetimi
-String generateRandomSecretKey() {
-  final bytes = utf8.encode(DateTime.now().toIso8601String());
-  return base64Url.encode(sha512.convert(bytes).bytes);
+// 🔌 MongoDB bağlantısı
+final String dbUri = env['MONGODB_URI'] ?? '';
+final mongo.Db db = mongo.Db(dbUri);
+late final mongo.DbCollection customersCollection;
+late final mongo.DbCollection personnelCollection;
+late final mongo.DbCollection companiesCollection;
+late final mongo.DbCollection adminCollection;
+late final mongo.DbCollection
+    advertisementsCollection; // 🔹 Yeni: Reklam koleksiyonu
+
+// 🔑 JWT Token için gizli anahtar
+final String secretKey = env['JWT_SECRET'] ?? '';
+
+Future<void> initializeDatabase() async {
+  if (!db.isConnected) {
+    await db.open();
+  }
+
+  // Koleksiyonların başlatılması
+  customersCollection = db.collection('customers');
+  adminCollection = db.collection('admin');
+  personnelCollection = db.collection('personnel');
+  companiesCollection = db.collection('companies');
+  advertisementsCollection =
+      db.collection('advertisements'); // 🔹 Yeni: Reklam koleksiyonu
 }
 
-final String secretKey = env['JWT_SECRET'] ?? generateRandomSecretKey();
-
-// 🔑 SHA-512 Hash Fonksiyonu
-String hashPassword(String password) {
-  return sha512.convert(utf8.encode(password)).toString();
-}
-
-// 🎫 JWT Token Oluşturma
-String generateJWT(String email, String role) {
+// 🎫 JWT Token oluşturma
+String generateJWT(String email, String role, String userId) {
   final claimSet = JwtClaim(
     issuer: 'crm_server',
     subject: email,
-    otherClaims: {'role': sha256.convert(utf8.encode(role)).toString()},
+    otherClaims: {'role': role, 'user_id': userId},
     issuedAt: DateTime.now(),
-    maxAge: const Duration(days: 1),
+    expiry:
+        DateTime.now().add(Duration(minutes: 30)), // 📌 Token 30 dakika geçerli
   );
-
   return issueJwtHS256(claimSet, secretKey);
 }
 
-// 🔍 JWT Token Doğrulama
-bool verifyJWT(String token) {
+// 🔍 JWT Token doğrulama
+JwtClaim? verifyAndDecodeJWT(String token) {
   try {
     final JwtClaim claimSet = verifyJwtHS256Signature(token, secretKey);
     claimSet.validate(issuer: 'crm_server');
-    return true;
+    return claimSet;
   } catch (e) {
-    print("JWT Doğrulama Hatası: $e");
-    return false;
+    print("JWT doğrulama hatası: $e");
+    return null;
   }
 }
 
-// 🔑 Kullanıcının Admin olup olmadığını kontrol et
-bool isAdmin(String token) {
-  try {
-    final JwtClaim claimSet = verifyJwtHS256Signature(token, secretKey);
-    claimSet.validate(issuer: 'crm_server');
-    final Map<String, dynamic> claims = claimSet.toJson();
-    String hashedAdminRole = sha256.convert(utf8.encode("admin")).toString();
-    return claims['role'] == hashedAdminRole;
-  } catch (e) {
-    return false;
-  }
+// 📌 Yetkilendirme Middleware
+Middleware checkAuth({bool isAdminRequired = false}) {
+  return (Handler innerHandler) {
+    return (Request request) async {
+      final authHeader = request.headers['Authorization'];
+
+      if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+        return Response(401, body: jsonEncode({"error": "Yetkisiz erişim"}));
+      }
+
+      final token = authHeader.substring(7);
+      try {
+        final claimSet = verifyJwtHS256Signature(token, secretKey);
+        claimSet.validate(issuer: 'crm_server');
+
+        request = request.change(context: {'jwt': claimSet});
+
+        if (isAdminRequired && claimSet['role'] != 'admin') {
+          return Response(403,
+              body: jsonEncode({"error": "Admin yetkisi gerekli!"}));
+        }
+
+        return innerHandler(request);
+      } catch (e) {
+        return Response(401, body: jsonEncode({"error": "Geçersiz token"}));
+      }
+    };
+  };
 }
 
-// 📝 Log Kayıt Fonksiyonu
-void logAction(String action) {
-  final logFile = File('logs.txt');
-  final logEntry = "[${DateTime.now()}] $action\n";
-  logFile.writeAsStringSync(logEntry, mode: FileMode.append);
-}
-
-void main() async {
-  final String personnelFilePath = 'assets/personnel.json';
-  final String usersFilePath = 'assets/users.json';
-  final String adminFilePath = 'assets/admin.json';
-
-  final Directory assetsDir = Directory('assets');
-  if (!assetsDir.existsSync()) {
-    assetsDir.createSync();
-  }
-
-  final File personnelFile = File(personnelFilePath);
-  final File usersFile = File(usersFilePath);
-  final File adminFile = File(adminFilePath);
-
+Future<void> main() async {
+  await initializeDatabase();
   final router = Router();
 
-  // 📌 Admin Login
-  router.post('/admin-login', (Request request) async {
-    final payload = await request.readAsString();
-    final Map<String, dynamic> data = jsonDecode(payload);
-    final String email = data['email'];
-    final String password = data['password'];
-
-    final List<dynamic> adminList = jsonDecode(await adminFile.readAsString());
-    final admin = adminList.firstWhere(
-        (a) => a['email'] == email && a['password'] == hashPassword(password),
-        orElse: () => null);
-
-    if (admin == null) {
-      return Response.forbidden(
-          jsonEncode({"error": "Geçersiz email veya şifre"}));
-    }
-
-    final String token = generateJWT(email, "admin");
-    return Response.ok(jsonEncode({"token": token}),
-        headers: {'Content-Type': 'application/json'});
-  });
-
-  // 📌 Personel Login
-  router.post('/login', (Request request) async {
+  // 📌 **Admin Girişi**
+  router.post('/api/v2/auth/admin-login', (Request request) async {
     try {
       final payload = await request.readAsString();
-      final Map<String, dynamic> data = jsonDecode(payload);
+      final data = jsonDecode(payload);
 
-      // 📌 E-posta ve şifre kontrolü
-      if (!data.containsKey('email') || !data.containsKey('password')) {
-        return Response.badRequest(
-            body: jsonEncode({"error": "Email ve şifre zorunludur"}));
+      // 🔹 NULL veya BOŞ veri kontrolü
+      if (data['email'] == null ||
+          data['email'].isEmpty ||
+          data['password'] == null ||
+          data['password'].isEmpty) {
+        return Response(
+          400,
+          body: jsonEncode({"error": "E-posta ve şifre boş olamaz!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
 
-      final String email = data['email'];
-      final String password = data['password'];
+      // 🔹 Admin kullanıcıyı veritabanında ara
+      final admin = await adminCollection.findOne({'email': data['email']});
 
-      // 📌 personnel.json dosyasını oku
-      if (!personnelFile.existsSync()) {
-        return Response.internalServerError(
-            body: jsonEncode({"error": "personnel.json bulunamadı!"}));
+      if (admin == null) {
+        return Response(
+          401,
+          body: jsonEncode({"error": "Geçersiz giriş"}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
 
-      final String fileContent = await personnelFile.readAsString();
-      if (fileContent.isEmpty) {
-        return Response.internalServerError(
-            body: jsonEncode({"error": "personnel.json boş!"}));
+      // 🔹 Eğer salt veya password NULL ise, giriş başarısız olur
+      if (admin['salt'] == null || admin['password'] == null) {
+        return Response(
+          401,
+          body: jsonEncode({"error": "Geçersiz giriş"}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
 
-      List<dynamic> personnelList;
-      try {
-        personnelList = jsonDecode(fileContent);
-      } catch (e) {
-        return Response.internalServerError(
-            body: jsonEncode({"error": "personnel.json bozuk!"}));
+      // 🔹 SHA-512 ile şifreyi hashleyerek kontrol et
+      final hashedPassword =
+          hashPassword(data['password'], admin['salt'] ?? '');
+
+      if (admin['password'] != hashedPassword) {
+        return Response(
+          401,
+          body: jsonEncode({"error": "Geçersiz giriş"}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
 
-      // 📌 Kullanıcıyı bul ve şifreyi karşılaştır
-      List<dynamic> foundUsers = personnelList
-          .where((p) =>
-              p['email'] == email && p['password'] == hashPassword(password))
-          .toList();
+      // 🔹 JWT Token oluştur
+      final token =
+          generateJWT(data['email'], 'admin', admin['_id'].toString());
 
-      if (foundUsers.isEmpty) {
-        return Response.forbidden(
-            jsonEncode({"error": "Geçersiz email veya şifre"}));
+      return Response.ok(
+        jsonEncode({"token": token}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e, stackTrace) {
+      print("Admin Login Error: $e\n$stackTrace"); // 🔥 Hata loglanıyor
+
+      return Response(
+        500,
+        body: jsonEncode({"error": "Sunucu hatası: $e"}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
+  // 📌 **Personel Girişi**
+  router.post('/api/v2/auth/login', (Request request) async {
+    try {
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      if (!data.containsKey("email") || !data.containsKey("password")) {
+        return Response(400,
+            body: jsonEncode({"error": "E-posta ve şifre gerekli"}));
       }
 
-      // 📌 Token oluştur
-      final String token = generateJWT(email, "personel");
+      final user = await personnelCollection
+          .findOne(mongo.where.eq("email", data["email"]));
 
-      return Response.ok(jsonEncode({"token": token}),
+      if (user == null) {
+        return Response(401,
+            body: jsonEncode({"error": "Geçersiz giriş bilgileri"}));
+      }
+
+      // 🔹 Hashlenmiş şifreyi kontrol et
+      String salt = user["salt"];
+      String hashedPassword = hashPassword(data["password"], salt);
+
+      if (hashedPassword != user["password"]) {
+        return Response(401,
+            body: jsonEncode({"error": "Geçersiz giriş bilgileri"}));
+      }
+
+      // 🔹 JWT Token oluştur
+      String token =
+          generateJWT(user["email"], "personel", user["_id"].toString());
+
+      return Response.ok(jsonEncode({"token": token, "role": "personel"}),
           headers: {'Content-Type': 'application/json'});
     } catch (e) {
-      return Response.internalServerError(
-          body: jsonEncode({"error": "Sunucu hatası: ${e.toString()}"}));
+      return Response(500, body: jsonEncode({"error": "Sunucu hatası: $e"}));
     }
   });
 
-  // 📌 Tüm Kullanıcıları Listeleme
-  router.get('/users', (Request request) async {
-    final token = request.headers['Authorization'];
+  // 📌 **Admin -> Personel DB kayıt etme (salt)**
+  router.post(
+      '/api/v2/auth/personnel',
+      checkAuth(isAdminRequired: true)((Request request) async {
+        try {
+          final payload = await request.readAsString();
+          final data = jsonDecode(payload);
 
-    if (token == null) {
-      print("⛔ HATA: Token bulunamadı!");
-      return Response.forbidden(
-          jsonEncode({"error": "Yetkisiz işlem - Token Eksik"}));
-    }
+          // 🔹 Gerekli alanları kontrol et
+          if (!data.containsKey("name") ||
+              !data.containsKey("email") ||
+              !data.containsKey("password")) {
+            return Response(400,
+                body: jsonEncode({"error": "Eksik personel bilgisi"}));
+          }
 
-    final tokenValue = token.replaceFirst('Bearer ', '').trim();
+          // 🔹 Şifreyi hashleyelim
+          String salt = generateSalt();
+          String hashedPassword = hashPassword(data["password"], salt);
 
-    if (!verifyJWT(tokenValue)) {
-      print("⛔ HATA: Token doğrulaması başarısız oldu!");
-      return Response.forbidden(
-          jsonEncode({"error": "Yetkisiz işlem - Token Geçersiz"}));
-    }
+          // 🔹 Aynı email ile kayıt varsa hata ver
+          final existingPersonnel = await personnelCollection
+              .findOne(mongo.where.eq("email", data["email"]));
+          if (existingPersonnel != null) {
+            return Response(409,
+                body: jsonEncode({"error": "Bu e-posta zaten kullanılıyor!"}));
+          }
 
-    if (!isAdmin(tokenValue)) {
-      print("⛔ HATA: Kullanıcı admin değil!");
-      return Response.forbidden(
-          jsonEncode({"error": "Bu işlem için yetkiniz yok"}));
-    }
+          // 🔹 Personeli kaydedelim
+          final result = await personnelCollection.insertOne({
+            "name": data["name"],
+            "email": data["email"],
+            "password": hashedPassword,
+            "salt": salt, // 📌 Şifreyi doğrulamak için Salt da kaydediyoruz!
+            "created_at": DateTime.now(),
+            "role": "personel" // 📌 Yetkilendirme için rol ekledik!
+          });
 
-    print("✅ Başarılı: Admin yetkisi doğrulandı!");
-    final jsonData = jsonDecode(await usersFile.readAsString());
-    return Response.ok(jsonEncode(jsonData),
-        headers: {'Content-Type': 'application/json'});
-  });
+          if (result.isSuccess) {
+            return Response.ok(jsonEncode({
+              "status": "success",
+              "message": "Personel başarıyla kaydedildi"
+            }));
+          } else {
+            return Response(500,
+                body: jsonEncode({"error": "Personel kaydı başarısız"}));
+          }
+        } catch (e) {
+          return Response(500,
+              body: jsonEncode({"error": "Sunucu hatası: $e"}));
+        }
+      }));
 
-  // 📌 Yeni Kullanıcı Ekleme
-  router.post('/add-user', (Request request) async {
-    final token = request.headers['Authorization'];
+  // 📌 **Admin Firma Bilgilerini Güncelleyebilir**
+  router.put(
+    '/api/v2/companies/<id>',
+    checkAuth(isAdminRequired: true)((Request request) async {
+      final String id = request.params['id']!;
+      try {
+        final String payload = await request.readAsString();
+        final dynamic data = jsonDecode(payload);
 
-    if (token == null) {
-      print("⛔ HATA: Token bulunamadı!");
-      return Response.forbidden(
-          jsonEncode({"error": "Yetkisiz işlem - Token Eksik"}));
-    }
+        // 🔹 Güncellenecek firmayı kontrol et
+        final Map<String, dynamic>? company = await companiesCollection
+            .findOne(mongo.where.id(mongo.ObjectId.parse(id)));
 
-    final tokenValue = token.replaceFirst('Bearer ', '').trim();
+        if (company == null) {
+          return Response(
+            404,
+            body: jsonEncode({"error": "Firma bulunamadı"}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
 
-    if (!verifyJWT(tokenValue)) {
-      print("⛔ HATA: Token doğrulaması başarısız oldu!");
-      return Response.forbidden(
-          jsonEncode({"error": "Yetkisiz işlem - Token Geçersiz"}));
-    }
+        // 🔹 Güncellenecek alanları belirle
+        final modifier = mongo.modify;
+        data.forEach((key, value) {
+          modifier.set(
+              key, value); // 🔥 `setAll` yerine tek tek alanları güncelle!
+        });
 
-    if (!isAdmin(tokenValue)) {
-      print("⛔ HATA: Kullanıcı admin değil!");
-      return Response.forbidden(
-          jsonEncode({"error": "Bu işlem için yetkiniz yok"}));
-    }
+        // 🔹 MongoDB'de güncelleme yap
+        final result = await companiesCollection.update(
+            mongo.where.id(mongo.ObjectId.parse(id)), modifier);
 
-    print("✅ Başarılı: Admin yetkisi doğrulandı!");
+        if (result['nModified'] > 0) {
+          return Response.ok(
+            jsonEncode({
+              "status": "success",
+              "message": "Firma başarıyla güncellendi"
+            }),
+            headers: {'Content-Type': 'application/json'},
+          );
+        } else {
+          return Response(
+            500,
+            body: jsonEncode({"error": "Firma güncellenemedi"}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+      } catch (e) {
+        return Response(
+          500,
+          body: jsonEncode({"error": "Sunucu hatası: $e"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    }),
+  );
+  // 📌 **Admin Firma Bilgisini Silebilir**
+  router.delete(
+      '/api/v2/companies/<id>',
+      checkAuth(isAdminRequired: true)((Request request) async {
+        final String id = request.params['id']!;
+        final result = await companiesCollection
+            .remove(mongo.where.id(mongo.ObjectId.parse(id)));
 
-    final payload = await request.readAsString();
-    final Map<String, dynamic> data = jsonDecode(payload);
+        if (result['n'] > 0) {
+          return Response.ok(jsonEncode(
+              {"status": "success", "message": "Firma başarıyla silindi"}));
+        } else {
+          return Response(500, body: jsonEncode({"error": "Firma silinemedi"}));
+        }
+      }));
 
-    // 📌 Gerekli Alanları Kontrol Et
-    if (!data.containsKey('name') ||
-        !data.containsKey('email') ||
-        !data.containsKey('phone') ||
-        !data.containsKey('assigned_to')) {
-      print("⛔ HATA: Eksik alanlar tespit edildi!");
-      return Response(400,
+  // 📌 **Reklam Oluşturma Endpoint’i (Admin)**
+  router.post(
+      '/api/v2/advertisements',
+      checkAuth(isAdminRequired: true)((Request request) async {
+        try {
+          final payload = await request.readAsString();
+          final data = jsonDecode(payload);
+
+          // Gerekli alan kontrolü: site_url, site_form_url, send_endpoint
+          if (!data.containsKey("site_url") ||
+              !data.containsKey("site_form_url") ||
+              !data.containsKey("send_endpoint")) {
+            return Response(
+              400,
+              body: jsonEncode({"error": "Eksik reklam bilgisi!"}),
+              headers: {'Content-Type': 'application/json'},
+            );
+          }
+
+          final sendEndpoint = data["send_endpoint"];
+          final uri = Uri.tryParse(sendEndpoint);
+          if (uri == null || uri.pathSegments.length < 3) {
+            return Response(
+              400,
+              body: jsonEncode({"error": "Geçersiz send_endpoint formatı!"}),
+              headers: {'Content-Type': 'application/json'},
+            );
+          }
+          // Son segmenti (ref) alıyoruz:
+          final ref = uri.pathSegments.last;
+
+          // Aynı ref ile reklam varsa hata döndür
+          final existingAd =
+              await advertisementsCollection.findOne({"ref": ref});
+          if (existingAd != null) {
+            return Response(
+              409,
+              body: jsonEncode(
+                  {"error": "Bu referansa ait reklam zaten mevcut!"}),
+              headers: {'Content-Type': 'application/json'},
+            );
+          }
+
+          final adData = {
+            "site_url": data["site_url"],
+            "site_form_url": data["site_form_url"],
+            "send_endpoint": sendEndpoint,
+            "ref": ref,
+            "created_at": DateTime.now(),
+          };
+
+          final result = await advertisementsCollection.insertOne(adData);
+          if (result.isSuccess) {
+            return Response.ok(
+              jsonEncode({
+                "status": "success",
+                "message": "Reklam başarıyla oluşturuldu!",
+                "ref": ref
+              }),
+              headers: {'Content-Type': 'application/json'},
+            );
+          } else {
+            return Response(
+              500,
+              body: jsonEncode({"error": "Reklam oluşturulamadı!"}),
+              headers: {'Content-Type': 'application/json'},
+            );
+          }
+        } catch (e) {
+          return Response(
+            500,
+            body: jsonEncode({"error": "Sunucu hatası: $e"}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+      }));
+
+  // 📌 Form Gönderme Endpoint’i (Varsayılan)
+  router.post('/api/v2/form', (Request request) async {
+    try {
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      // 📌 IP adresini çekiyoruz (Spam koruması için)
+      final String ip = request.headers['x-forwarded-for'] ??
+          (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+              ?.remoteAddress
+              .address ??
+          'unknown';
+
+      final now = DateTime.now();
+      _formRequestLogs.putIfAbsent(ip, () => []);
+
+      // 📌 Eğer aynı IP'den 1 dakikada 3'ten fazla istek geldiyse, engelle!
+      _formRequestLogs[ip]!.removeWhere(
+          (timestamp) => now.difference(timestamp) > Duration(minutes: 1));
+      if (_formRequestLogs[ip]!.length >= 3) {
+        return Response(
+          429,
           body: jsonEncode(
-              {"error": "Eksik alanlar: name, email, phone, assigned_to"}));
-    }
-
-    print("✅ Yeni kullanıcı ekleniyor: ${data['email']}");
-
-    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-    // 📌 Yeni Kullanıcıyı JSON Formatına Uygun Olarak Ekle
-    Map<String, dynamic> newUser = {
-      "id": userList.isNotEmpty
-          ? (userList.last['id'] ?? 100) + 1
-          : 101, // Yeni ID oluştur
-      "name": data["name"],
-      "email": data["email"],
-      "phone": data["phone"],
-      "trade_status": data["trade_status"] ?? false,
-      "investment_status": data["investment_status"] ?? false,
-      "investment_amount": data["investment_amount"] ?? 0,
-      "assigned_to": data["assigned_to"],
-      "call_duration": data["call_duration"] ?? 0,
-      "phone_status": data["phone_status"] ?? "Bilinmiyor",
-      "previous_investment": data["previous_investment"] ?? false,
-      "expected_investment_date": data["expected_investment_date"],
-      "created_at": DateTime.now().toIso8601String(),
-    };
-
-    userList.add(newUser);
-
-    await usersFile.writeAsString(jsonEncode(userList));
-
-    logAction("Yeni kullanıcı eklendi: ${data['name']} (${data['email']})");
-
-    return Response.ok(
-        jsonEncode({
-          "status": "success",
-          "message": "Kullanıcı eklendi",
-          "user": newUser
-        }),
-        headers: {'Content-Type': 'application/json'});
-  });
-
-  // 📌 Kullanıcı Güncelleme
-  router.put('/update-user/<email>', (Request request, String email) async {
-    final token = request.headers['Authorization'];
-    if (token == null || !verifyJWT(token)) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
-    }
-
-    final payload = await request.readAsString();
-    final data = jsonDecode(payload);
-
-    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-    bool userFound = false;
-
-    for (var user in userList) {
-      if (user['email'] == email) {
-        user.addAll(data);
-        userFound = true;
-        break;
+              {"error": "Çok fazla istek attınız. Lütfen biraz bekleyin!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
+      _formRequestLogs[ip]!.add(now);
+
+      // 📌 Eksik alan kontrolü
+      if (!data.containsKey("name") ||
+          !data.containsKey("email") ||
+          !data.containsKey("phone")) {
+        return Response(
+          400,
+          body: jsonEncode({"error": "Eksik bilgi girdiniz!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // 📌 Aynı email ile kayıt kontrolü
+      final existingCustomer = await customersCollection
+          .findOne(mongo.where.eq("email", data["email"]));
+      if (existingCustomer != null) {
+        return Response(
+          409,
+          body: jsonEncode({"error": "Bu e-posta adresi zaten kayıtlı!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // 📌 Yeni müşteri verisi
+      final newCustomer = {
+        "name": data["name"],
+        "email": data["email"],
+        "phone": data["phone"],
+        "trade_status": false,
+        "investment_status": false,
+        "investment_amount": 0,
+        "assigned_to":
+            null, // 📌 Şu an için boş, daha sonra bir personel atanacak
+        "call_duration": 0,
+        "phone_status": "Bilinmiyor",
+        "previous_investment": false,
+        "expected_investment_date": null,
+        "created_at": DateTime.now().toUtc(),
+      };
+
+      // 📌 MongoDB'ye kaydet
+      final result = await customersCollection.insertOne(newCustomer);
+
+      if (result.isSuccess) {
+        return Response.ok(
+          jsonEncode({
+            "status": "success",
+            "message": "Müşteri başarıyla kaydedildi!"
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response(
+          500,
+          body: jsonEncode({"error": "Müşteri kaydedilemedi!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    } catch (e) {
+      return Response(
+        500,
+        body: jsonEncode({"error": "Sunucu hatası: $e"}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
-
-    if (!userFound) {
-      return Response.notFound(jsonEncode({"error": "Kullanıcı bulunamadı"}));
-    }
-
-    await usersFile.writeAsString(jsonEncode(userList));
-
-    logAction("Kullanıcı güncellendi: $email");
-
-    return Response.ok(
-        jsonEncode({"status": "success", "message": "Kullanıcı güncellendi"}));
   });
 
-  // 📌 Kullanıcı Silme (Sadece Admin)
-  router.delete('/delete-user/<email>', (Request request, String email) async {
-    final token = request.headers['Authorization'];
-    if (token == null || !verifyJWT(token) || !isAdmin(token)) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
+  // 📌 Reklam'a Özel Form Gönderim Endpoint’i
+  router.post('/api/v2/form/<ref>', (Request request) async {
+    final ref = request.params['ref']!;
+    try {
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      // 📌 IP adresini al (Spam kontrolü için)
+      final String ip = request.headers['x-forwarded-for'] ??
+          (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+              ?.remoteAddress
+              .address ??
+          'unknown';
+
+      final now = DateTime.now();
+      _formRequestLogs.putIfAbsent(ip, () => []);
+      _formRequestLogs[ip]!.removeWhere(
+          (timestamp) => now.difference(timestamp) > Duration(minutes: 1));
+      if (_formRequestLogs[ip]!.length >= 3) {
+        return Response(
+          429,
+          body: jsonEncode(
+              {"error": "Çok fazla istek attınız. Lütfen biraz bekleyin!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      _formRequestLogs[ip]!.add(now);
+
+      // Gerekli alan kontrolü: name, email, phone
+      if (!data.containsKey("name") ||
+          !data.containsKey("email") ||
+          !data.containsKey("phone")) {
+        return Response(
+          400,
+          body: jsonEncode({"error": "Eksik bilgi girdiniz!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Yeni form verisini hazırla (gerekli alanlar ve reklam ref'i)
+      final newSubmission = {
+        "name": data["name"],
+        "email": data["email"],
+        "phone": data["phone"],
+        "trade_status": false,
+        "investment_status": false,
+        "investment_amount": 0,
+        "assigned_to": null,
+        "call_duration": 0,
+        "phone_status": "Bilinmiyor",
+        "previous_investment": false,
+        "expected_investment_date": null,
+        "created_at": DateTime.now().toUtc(),
+        "advertisement_ref": ref,
+      };
+
+      // "submissions_<ref>" adında dinamik koleksiyon kullan (koleksiyon, ilk eklemede otomatik oluşturulacaktır)
+      final submissionCollection = db.collection('submissions_$ref');
+      final result = await submissionCollection.insertOne(newSubmission);
+
+      if (result.isSuccess) {
+        return Response.ok(
+          jsonEncode({
+            "status": "success",
+            "message": "Müşteri başarıyla kaydedildi!",
+            "advertisement_ref": ref,
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response(
+          500,
+          body: jsonEncode({"error": "Müşteri kaydedilemedi!"}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    } catch (e) {
+      return Response(
+        500,
+        body: jsonEncode({"error": "Sunucu hatası: $e"}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
-
-    List<dynamic> userList = jsonDecode(await usersFile.readAsString());
-
-    userList.removeWhere((user) => user['email'] == email);
-
-    await usersFile.writeAsString(jsonEncode(userList));
-
-    logAction("Admin kullanıcısı silindi: $email");
-
-    return Response.ok(
-        jsonEncode({"status": "success", "message": "Kullanıcı silindi"}));
   });
 
-  // 📌 Admin Paneli (Gelişmiş İstatistikler)
-  router.get('/admin', (Request request) async {
-    final String? authHeader = request.headers['Authorization'];
+  // 📌 **Admin ve Personel Müşteri Bilgilerini Görebilir**
+  router.get(
+      '/api/v2/customers',
+      checkAuth()((Request request) async {
+        final claim = request.context['jwt'] as JwtClaim;
+        final String userRole = claim.toJson()['role'];
+        final String personnelEmail = claim.subject ?? '';
 
-    if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-      return Response.forbidden(jsonEncode({"error": "Yetkisiz işlem"}));
-    }
+        List<Map<String, dynamic>> customers;
 
-    final String jwtToken = authHeader.replaceFirst('Bearer ', '');
+        if (userRole == 'admin') {
+          // 🔹 Admin tüm müşteri bilgilerini alabilir
+          customers = await customersCollection.find().toList();
+        } else if (userRole == 'personel') {
+          // 🔹 Personel sadece kendisine atanmış müşterileri görebilir
+          customers = await customersCollection
+              .find(mongo.where.eq('assigned_to', personnelEmail))
+              .toList();
 
-    if (!verifyJWT(jwtToken) || !isAdmin(jwtToken)) {
-      return Response.forbidden(
-          jsonEncode({"error": "Bu işlem için yetkiniz yok"}));
-    }
+          // 🔹 Personelin görebileceği verileri sınırla ve telefon numarasını maskele
+          customers = customers.map((customer) {
+            return {
+              "name": customer["name"],
+              "investment_amount": customer["investment_amount"],
+              "phone": maskPhoneNumber(customer["phone"]),
+            };
+          }).toList();
+        } else {
+          return Response.forbidden(jsonEncode({"error": "Yetkisiz erişim"}));
+        }
 
-    // 📌 JSON dosyalarını tanımla
-    final File personnelFile = File('assets/personnel.json');
-    final File usersFile = File('assets/users.json');
+        final formattedCustomers = customers.map((customer) {
+          return customer.map((key, value) {
+            if (value is DateTime) {
+              return MapEntry(key, value.toIso8601String());
+            }
+            return MapEntry(key, value);
+          });
+        }).toList();
 
-    List<dynamic> userList = [];
-    List<dynamic> personnelList = [];
+        return Response.ok(jsonEncode(formattedCustomers),
+            headers: {'Content-Type': 'application/json'});
+      }));
 
-    if (personnelFile.existsSync()) {
-      final String personnelContent = await personnelFile.readAsString();
-      if (personnelContent.isNotEmpty) {
+  // 📌 **Personel Sadece Kendi Müşterisini Görebilir**
+  router.get(
+      '/api/v2/customers/assigned',
+      checkAuth()((Request request) async {
+        final claim = request.context['jwt'] as JwtClaim;
+        final String personnelEmail = claim.subject ?? '';
+
+        final assignedCustomers = await customersCollection
+            .find(mongo.where.eq('assigned_to', personnelEmail))
+            .toList();
+
+        return Response.ok(jsonEncode(assignedCustomers));
+      }));
+
+  // 📌 **Admin Müşteri Ekleyebilir ve Atayabilir**
+  router.post(
+      '/api/v2/customers',
+      checkAuth(isAdminRequired: true)((Request request) async {
+        final payload = await request.readAsString();
+        final data = jsonDecode(payload);
+        data['created_at'] = DateTime.now().toIso8601String();
+
+        final result = await customersCollection.insertOne(data);
+        if (result.isSuccess) {
+          return Response(201, body: jsonEncode({"status": "success"}));
+        } else {
+          return Response(500,
+              body: jsonEncode({"error": "Müşteri eklenemedi"}));
+        }
+      }));
+
+  // 📌 **Personel Yalnızca Kendi Müşterisini Güncelleyebilir**
+  router.put(
+    '/api/v2/customers/<id>',
+    checkAuth()((Request request) async {
+      final claim = request.context['jwt'] as JwtClaim;
+      final String personnelEmail = claim.subject ?? '';
+
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      final id = request.params['id'];
+      final customer = await customersCollection
+          .findOne(mongo.where.id(mongo.ObjectId.parse(id!)));
+
+      if (customer == null) {
+        return Response.notFound(jsonEncode({"error": "Müşteri bulunamadı"}));
+      }
+
+      // Eğer personel ise ve müşteriyi güncellemeye yetkisi yoksa hata ver
+      if (claim.toJson()['role'] == 'personel' &&
+          customer['assigned_to'] != personnelEmail) {
+        return Response.forbidden(
+            jsonEncode({"error": "Bu müşteri sizin atanmış değil"}));
+      }
+
+      // 🔹 **MongoDB UpdateOne Kullanımı**
+      final result = await customersCollection.updateOne(
+          mongo.where.id(mongo.ObjectId.parse(id)),
+          mongo.modify.set('data', data));
+
+      if (result.isAcknowledged) {
+        return Response.ok(jsonEncode({"status": "success"}));
+      } else {
+        return Response.internalServerError(
+            body: jsonEncode({"error": "Müşteri güncellenemedi"}));
+      }
+    }),
+  );
+
+  // 📌 **Admin Müşteri Silebilir**
+  router.delete(
+    '/api/v2/customers/<id>',
+    checkAuth(isAdminRequired: true)((Request request) async {
+      final id = request.params['id'];
+      final result = await customersCollection
+          .deleteOne(mongo.where.id(mongo.ObjectId.parse(id!)));
+      final handler = Pipeline()
+          .addMiddleware(rateLimiter())
+          .addMiddleware(logRequests())
+          .addMiddleware(corsMiddleware)
+          .addHandler(router);
+
+      final server =
+          await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
+      if (result.isAcknowledged) {
+        return Response.ok(jsonEncode({"status": "success"}));
+      } else {
+        return Response.internalServerError(
+            body: jsonEncode({"error": "Silme işlemi başarısız"}));
+      }
+    }),
+  );
+
+  // 📌 **Admin Yeni Firma Ekleyebilir**
+  router.post(
+      '/api/v2/companies',
+      checkAuth(isAdminRequired: true)((Request request) async {
+        final payload = await request.readAsString();
+        final data = jsonDecode(payload);
+
+        // Gerekli alanları kontrol et
+        if (!data.containsKey("name") ||
+            !data.containsKey("address") ||
+            !data.containsKey("phone")) {
+          return Response(400,
+              body: jsonEncode({"error": "Eksik firma bilgisi"}));
+        }
+
+        // Firmayı ekleyelim
+        final result = await companiesCollection.insertOne({
+          "name": data["name"],
+          "address": data["address"],
+          "phone": data["phone"],
+          "created_at": DateTime.now(),
+        });
+
+        if (result.isSuccess) {
+          return Response.ok(jsonEncode(
+              {"status": "success", "message": "Firma başarıyla eklendi"}));
+        } else {
+          return Response(500, body: jsonEncode({"error": "Firma eklenemedi"}));
+        }
+      }));
+
+  // 📌 **Admin Tüm Firma Bilgilerini Görebilir**
+  router.get(
+      '/api/v2/companies',
+      checkAuth(isAdminRequired: true)((Request request) async {
         try {
-          personnelList = jsonDecode(personnelContent);
+          final companies = await companiesCollection.find().toList();
+
+          // 🔹 DateTime nesnelerini JSON uyumlu
+          final formattedCompanies = companies.map((company) {
+            return company.map((key, value) {
+              if (value is DateTime) {
+                return MapEntry(key, value.toIso8601String());
+              }
+              return MapEntry(key, value);
+            });
+          }).toList();
+
+          return Response.ok(
+            jsonEncode(formattedCompanies),
+            headers: {'Content-Type': 'application/json'},
+          );
         } catch (e) {
-          return Response.internalServerError(
-              body: jsonEncode({"error": "personnel.json bozuk!"}));
+          return Response(
+            500,
+            body: jsonEncode({"error": "Sunucu hatası: $e"}),
+            headers: {'Content-Type': 'application/json'},
+          );
         }
-      }
-    }
+      }));
 
-    if (usersFile.existsSync()) {
-      final String usersContent = await usersFile.readAsString();
-      if (usersContent.isNotEmpty) {
-        try {
-          userList = jsonDecode(usersContent);
-        } catch (e) {
-          return Response.internalServerError(
-              body: jsonEncode({"error": "users.json bozuk!"}));
-        }
-      }
-    }
-
-    // 📌 Toplam müşteri ve personel sayısı
-    int totalCustomers = userList.length;
-    int totalPersonnel = personnelList.length;
-
-    // 📌 Son 7 gün içinde eklenen müşterileri say
-    DateTime now = DateTime.now();
-    int last7DaysCustomers = userList.where((user) {
-      if (user.containsKey('created_at')) {
-        DateTime createdAt = DateTime.parse(user['created_at']);
-        return now.difference(createdAt).inDays <= 7;
-      }
-      return false;
-    }).length;
-
-    // 📌 Son 30 gün içinde yapılan toplam yatırım miktarı
-    double last30DaysInvestment = userList.fold(0, (sum, user) {
-      if (user.containsKey('investment_amount') &&
-          user.containsKey('created_at')) {
-        DateTime createdAt = DateTime.parse(user['created_at']);
-        if (now.difference(createdAt).inDays <= 30) {
-          return sum + (user['investment_amount'] ?? 0);
-        }
-      }
-      return sum;
-    });
-
-    // 📌 En çok yatırım alan personeli bul
-    Map<String, double> personnelInvestment = {};
-    for (var user in userList) {
-      if (user.containsKey('assigned_to') &&
-          user.containsKey('investment_amount')) {
-        String personnelEmail = user['assigned_to'];
-        double investment = (user['investment_amount'] ?? 0).toDouble();
-        personnelInvestment[personnelEmail] =
-            (personnelInvestment[personnelEmail] ?? 0) + investment;
-      }
-    }
-    String topInvestmentPersonnel = personnelInvestment.entries.fold("",
-        (max, e) => e.value > (personnelInvestment[max] ?? 0) ? e.key : max);
-
-    // 📌 En çok müşteri ekleyen personeli bul
-    Map<String, int> personnelCustomerCount = {};
-    for (var user in userList) {
-      if (user.containsKey('assigned_to')) {
-        String personnelEmail = user['assigned_to'];
-        personnelCustomerCount[personnelEmail] =
-            (personnelCustomerCount[personnelEmail] ?? 0) + 1;
-      }
-    }
-    String topCustomerAddingPersonnel = personnelCustomerCount.entries.fold("",
-        (max, e) => e.value > (personnelCustomerCount[max] ?? 0) ? e.key : max);
-
-    // 📌 Toplam çağrı süresi (dakika)
-    int totalCallDuration = userList.fold(0, (sum, user) {
-      return sum + ((user['call_duration'] ?? 0) as num).toInt();
-    });
-
-    // 📌 Müşteri telefon durumu istatistikleri
-    Map<String, int> phoneStatusCounts = {
-      "Cevapsız": 0,
-      "Yanlış No": 0,
-      "Meşgul": 0,
-      "Onayladı": 0
-    };
-    for (var user in userList) {
-      if (user.containsKey('phone_status')) {
-        String status = user['phone_status'];
-        if (phoneStatusCounts.containsKey(status)) {
-          phoneStatusCounts[status] = phoneStatusCounts[status]! + 1;
-        }
-      }
-    }
-
-    // 📌 Admin Paneli Verileri (EKLENDİ!)
-    final Map<String, dynamic> adminDashboard = {
-      "total_customers": totalCustomers,
-      "total_personnel": totalPersonnel,
-      "last_7_days_customers": last7DaysCustomers,
-      "last_30_days_investment": last30DaysInvestment,
-      "top_investment_personnel": topInvestmentPersonnel,
-      "top_customer_adding_personnel": topCustomerAddingPersonnel,
-      "total_call_duration": totalCallDuration,
-      "phone_status_counts": phoneStatusCounts,
-      "personnel_details": personnelList
-          .map((person) => {
-                "name": person["name"],
-                "email": person[
-                    "email"], // Eğer email'i göstermek istemiyorsan kaldır
-                "assigned_customers": person["assigned_customers"] ?? [],
-                "total_investment": person["total_investment"] ?? 0,
-                "created_at": person["created_at"],
-              })
-          .toList(),
-      "customer_details": userList
-          .map((user) => {
-                "name": user["name"],
-                "email": user["email"],
-                "created_at": user["created_at"],
-              })
-          .toList(),
-      "logs": File('logs.txt').existsSync()
-          ? File('logs.txt').readAsLinesSync()
-          : [],
-    };
-
-    return Response.ok(jsonEncode(adminDashboard),
-        headers: {'Content-Type': 'application/json'});
-  });
-
-  var handler = const Pipeline()
-      .addMiddleware(logRequests())
+  final handler = Pipeline()
+      .addMiddleware(rateLimiter())
+      .addMiddleware(corsHeaders())
       .addMiddleware(corsMiddleware)
-      .addHandler(router.call);
+      .addHandler(router);
 
-  var server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
-  print('✅ Server running on http://${server.address.host}:${server.port}');
+  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
+  print(
+      '✅ Sunucu şu serviste açık http://${server.address.host}:${server.port}');
+  print('✅ MongoDB Bağlantısı Yapıldı.');
+  print('📌 Hata Dahilinde IT Birimine Başvurun.');
 }
 
-// 🌍 CORS Middleware
+// 📌 **Salt Üretme Fonksiyonu**
+String generateSalt([int length = 16]) {
+  final rand = Random.secure();
+  const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return List.generate(length, (index) => chars[rand.nextInt(chars.length)])
+      .join();
+}
+
+String hashPassword(String password, String salt) {
+  final bytes = utf8.encode(password + salt);
+  final digest = sha512.convert(bytes); // 📌 SHA-512 Kullanılıyor
+  return digest.toString();
+}
+
+// 📌 Telefon numarasını maskeleme fonksiyonu
+String maskPhoneNumber(String phone) {
+  if (phone.length >= 10) {
+    return phone.substring(0, 3) + "-XXX-XXXX";
+  }
+  return "XXX-XXX-XXXX"; // Eksik numaralar için güvenli varsayılan değer
+}
+
+// 📌 **CORS Middleware**
 final Middleware corsMiddleware = (Handler innerHandler) {
   return (Request request) async {
     if (request.method == 'OPTIONS') {
@@ -498,8 +921,10 @@ final Middleware corsMiddleware = (Handler innerHandler) {
   };
 };
 
+// 📌 **CORS Headers Tanımlandı**
 const Map<String, String> _corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization',
+  'Access-Control-Allow-Headers':
+      'Origin, Content-Type, Authorization, Accept, X-Requested-With',
 };
