@@ -1,3 +1,4 @@
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 
 import 'package:crm_k/core/widgets/user_detail/other_v/contact_actions.dart';
@@ -7,11 +8,17 @@ import 'package:crm_k/core/widgets/user_detail/other_v/user_info_card.dart';
 import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/V/right_bar/communication_notes_page.dart';
 import 'package:flutter/material.dart';
 
-class UserDetailWidget extends StatelessWidget {
+class UserDetailWidget extends StatefulWidget {
   final User user;
 
   const UserDetailWidget({super.key, required this.user});
 
+  @override
+  State<UserDetailWidget> createState() => _UserDetailWidgetState();
+}
+
+class _UserDetailWidgetState extends State<UserDetailWidget> {
+  final PersonelMainManagerLocal _managerLocal = PersonelMainManagerLocal();
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -37,7 +44,7 @@ class UserDetailWidget extends StatelessWidget {
                       child: Column(
                         children: [
                           /// **Kullanıcı Bilgileri**
-                          UserInfoCard(user: user),
+                          UserInfoCard(user: widget.user),
 
                           /// **Otomatik Arama Butonu**
                           Card(
@@ -47,13 +54,20 @@ class UserDetailWidget extends StatelessWidget {
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green),
-                                onPressed: () {},
+                                onPressed: () {
+                                  _managerLocal.callCustomer(
+                                      widget.user.phone ??
+                                          'Telefon Numarası Boş');
+                                },
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.call),
                                     SizedBox(width: 15),
-                                    Text('Otomatik Arama Başlat')
+                                    Text(
+                                      'Otomatik Arama Başlat',
+                                      style: TextStyle(color: Colors.white),
+                                    )
                                   ],
                                 ),
                               ),
@@ -127,7 +141,7 @@ class UserDetailWidget extends StatelessWidget {
                           /// **Diğer İşlem Butonları**
                           const SizedBox(height: 12),
                           InvestorSelectionRow(),
-                          ContactActions(user: user),
+                          ContactActions(user: widget.user),
                           const SizedBox(height: 12),
                         ],
                       ),
@@ -170,7 +184,7 @@ class UserDetailWidget extends StatelessWidget {
                               child: TabBarView(
                                 children: [
                                   CommunicationNotesPage(
-                                      user: user), // **NOTLAR 📜**
+                                      user: widget.user), // **NOTLAR 📜**
                                   Placeholder(), // **EVRAKLAR 📂**
                                   Placeholder(), // **HAREKETLER 🔄**
                                   Placeholder(), // **FİNANS 💰**

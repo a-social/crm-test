@@ -65,11 +65,6 @@ class _CommunicationNotesPageState extends State<CommunicationNotesPage> {
           /// **Sol Tarafta Daire ve Çizgi**
           Column(
             children: [
-              Container(
-                width: 2,
-                height: 30,
-                color: Colors.blue,
-              ),
               CircleAvatar(
                 radius: 6,
                 backgroundColor: Colors.blue,

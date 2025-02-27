@@ -18,21 +18,21 @@ class PersonelsUserListScreenView extends StatefulWidget {
 
 class _PersonelsUserListScreenViewState
     extends State<PersonelsUserListScreenView> {
-  late Future<List<User>> _usersFuture;
+  late PersonelMainManager personelManager;
   String _searchQuery = "";
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    personelManager = PersonelMainManager(token: authProvider.token);
+    personelManager.startFetchingAssignedCustomers(context);
   }
 
-  void _fetchUsers() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final personelManager = PersonelMainManager(token: authProvider.token);
-    _usersFuture = personelManager.fetchAssignedCustomers(context);
-    setState(() {});
+  @override
+  void dispose() {
+    personelManager.dispose();
+    super.dispose();
   }
 
   @override
@@ -58,8 +58,8 @@ class _PersonelsUserListScreenViewState
           const SizedBox(height: 10),
           _buildHeader(context),
           Expanded(
-            child: FutureBuilder<List<User>>(
-              future: _usersFuture,
+            child: StreamBuilder<List<User>>(
+              stream: personelManager.assignedCustomersStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

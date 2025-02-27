@@ -25,13 +25,21 @@ class UserAddViewModel extends ChangeNotifier {
     notifyListeners();
 
     final newUser = User(
-      name: nameController.text.trim(),
-      email: emailController.text.trim(),
-      phone: phoneController.text.trim().isNotEmpty
-          ? phoneController.text.trim()
-          : null,
-      assignedTo: assignedTo ?? "", // API boş kabul etmiyor, "" gönderiyoruz.
-    );
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        phone: phoneController.text.trim().isNotEmpty
+            ? phoneController.text.trim()
+            : null,
+        assignedTo: assignedTo ?? "", // API boş kabul etmiyor, "" gönderiyoruz.
+        callDuration: 0,
+        createdAt: DateTime.now(),
+        expectedInvestmentDate: null,
+        investmentAmount: 0,
+        investmentStatus: false,
+        password: '',
+        phoneStatus: '',
+        previousInvestment: false,
+        tradeStatus: false);
 
     try {
       await Provider.of<AdminService>(context, listen: false)

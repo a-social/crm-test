@@ -1,3 +1,4 @@
+import 'package:crm_k/core/models/personel_model/manager/personel_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,7 +49,7 @@ class RightPanelMainVm {
     );
   }
 
-  void addInvestmentAmount(BuildContext context) {
+  void addInvestmentAmount(BuildContext context, String userId) {
     TextEditingController amountController = TextEditingController();
     String selectedCurrency = "₺"; // Varsayılan para birimi TL
 
@@ -91,8 +92,11 @@ class RightPanelMainVm {
           ),
           actions: [
             TextButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 if (amountController.text.isNotEmpty) {
+                  final PersonelMainManager manager = PersonelMainManager();
+                  await manager.updateInvestmentAmount(context, userId,
+                      double.parse(amountController.text.trim()));
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

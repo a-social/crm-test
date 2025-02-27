@@ -6,7 +6,6 @@ import 'package:crm_k/screens/personnel/personel_dashboard/V/right_panel/VM/righ
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ManagementPage extends StatefulWidget {
   final User user;
@@ -18,17 +17,8 @@ class ManagementPage extends StatefulWidget {
 }
 
 class _ManagementPageState extends State<ManagementPage> {
-  final PersonnelManager manager = PersonnelManager();
   final RightPanelMainVm rightmodel = RightPanelMainVm();
-  void sendWhatsAppMessage(String phoneNumber) async {
-    String url = "https://web.whatsapp.com/send?phone=$phoneNumber";
-
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } else {
-      print("WhatsApp Web açılamadı.");
-    }
-  }
+  final PersonelMainManagerLocal _managrLocal = PersonelMainManagerLocal();
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +48,7 @@ class _ManagementPageState extends State<ManagementPage> {
               "Telefon Ara",
               Colors.blue,
               () {
-                manager.callCustomer(widget.user.phone ?? '');
+                _managrLocal.callCustomer(widget.user.phone ?? '');
               },
             ),
             _buildActionIcon(
@@ -66,16 +56,17 @@ class _ManagementPageState extends State<ManagementPage> {
               "WhatsApp Gönder",
               Colors.green,
               () {
-                sendWhatsAppMessage(widget.user.phone ?? '');
+                _managrLocal.sendWhatsAppMessage(widget.user.phone ?? '');
               },
             ),
             _buildActionIcon(
               Icons.email,
               "E-Posta Gönder",
               Colors.orange,
+              //belki mail templadei hazırlanabilir databaase üzerinde tutulabilir ve daha rahat şekilde verilerbilir ancak fazla fikrim yok
               () {
-                manager.sendEmail(
-                    'sahandamar274@gmail.com|örnek|bu bir örnek mesajdır lütfen devamını ekleyelim');
+                _managrLocal.sendEmail(
+                    '${widget.user.email}|Merhaba [bulunduğu departman]|[Bulunduğu Departman] \'a Hoşgeldiniz Size Nasıl Yardımcı Olabilirim');
               },
             ),
             _buildActionIcon(Icons.chat, "Mesaj Gönder", Colors.teal),
@@ -91,7 +82,9 @@ class _ManagementPageState extends State<ManagementPage> {
               "Yatırım Ekle",
               Colors.green,
               () {
-                rightmodel.addInvestmentAmount(context);
+                //doc id almamız gerek
+                rightmodel.addInvestmentAmount(
+                    context, widget.user.id.toString());
               },
             ),
             _buildActionIcon(
