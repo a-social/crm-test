@@ -1,5 +1,6 @@
 class User {
   final int? id;
+  final String? documentId; // '_id' alanı eklendi
   final String name;
   final String email;
   final String? phone;
@@ -16,6 +17,7 @@ class User {
 
   User({
     this.id,
+    this.documentId, // Yeni eklenen alan
     required this.name,
     required this.email,
     this.phone,
@@ -34,7 +36,8 @@ class User {
   // JSON'dan User modeline çevirme
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'], // Bazı kayıtlarda yok
+      id: json['id'], // Server'dan gelen ID
+      documentId: json['_id'], // Yeni eklenen _id alanı
       name: json['name'] ?? 'Bilinmeyen Müşteri', // Varsayılan isim
       email: json['email'] ?? 'no-email@example.com', // Varsayılan email
       phone: json['phone'],
@@ -55,6 +58,7 @@ class User {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      '_id': documentId, // JSON'a eklenen _id alanı
       'name': name,
       'email': email,
       'phone': phone,
@@ -80,10 +84,9 @@ class User {
   // **toString() Metodu** - Tüm bilgileri okunabilir şekilde döndürür
   @override
   String toString() {
-    //      assignedTo: $assignedTo,
-
     return '''
-      İD: $id,
+      Server ID: $id,
+      Document ID: $documentId,
       İsim: $name,
       Mail: $email,
       Telefon: $phone,

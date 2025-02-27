@@ -26,7 +26,7 @@ class _PersonelsUserListScreenViewState
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     personelManager = PersonelMainManager(token: authProvider.token);
-    personelManager.startFetchingAssignedCustomers(context);
+    personelManager.fetchAssignedCustomers(context);
   }
 
   @override

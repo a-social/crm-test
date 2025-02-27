@@ -116,7 +116,11 @@ class _UserDetailWidgetState extends State<UserDetailWidget> {
                                         child: ElevatedButton.icon(
                                           style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.green),
-                                          onPressed: () {},
+                                          onPressed: () {
+                                            _managerLocal
+                                                .showAccountSelectionDialog(
+                                                    context);
+                                          },
                                           icon: const Icon(Icons.person_add),
                                           label: const Text("C Hesabı Aç"),
                                         ),

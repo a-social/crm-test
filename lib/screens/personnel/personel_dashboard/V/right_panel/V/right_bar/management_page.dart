@@ -69,14 +69,20 @@ class _ManagementPageState extends State<ManagementPage> {
                     '${widget.user.email}|Merhaba [bulunduğu departman]|[Bulunduğu Departman] \'a Hoşgeldiniz Size Nasıl Yardımcı Olabilirim');
               },
             ),
-            _buildActionIcon(Icons.chat, "Mesaj Gönder", Colors.teal),
+            // _buildActionIcon(Icons.chat, "Mesaj Gönder", Colors.teal),
           ]),
 
           /// **💰 Finansal İşlemler**
           _buildSectionTitle("💰 Finansal İşlemler"),
           _buildIconWrap([
             _buildActionIcon(
-                Icons.account_balance_wallet, "Hesap Aç", Colors.blue),
+              Icons.account_balance_wallet,
+              "Hesap Aç",
+              Colors.blue,
+              () {
+                _managrLocal.showAccountSelectionDialog(context);
+              },
+            ),
             _buildActionIcon(
               Icons.attach_money,
               "Yatırım Ekle",
@@ -84,7 +90,9 @@ class _ManagementPageState extends State<ManagementPage> {
               () {
                 //doc id almamız gerek
                 rightmodel.addInvestmentAmount(
-                    context, widget.user.id.toString());
+                    context,
+                    widget.user.documentId.toString(),
+                    (widget.user.investmentAmount ?? 0.0).toDouble());
               },
             ),
             _buildActionIcon(
@@ -108,7 +116,17 @@ class _ManagementPageState extends State<ManagementPage> {
           _buildSectionTitle("⚙️ Kullanıcı Yönetimi"),
           _buildIconWrap([
             _buildActionIcon(
-                Icons.assignment_ind, "Temsilci Atama", Colors.purple),
+              Icons.assignment_ind,
+              "Temsilci Değiştir",
+              Colors.purple,
+              () {},
+            ),
+            _buildActionIcon(
+              Icons.warning_outlined,
+              "RET'E GÖNDER!",
+              Colors.red,
+              () {},
+            ),
             _buildActionIcon(
               Icons.update,
               "Durum Güncelle",
@@ -238,7 +256,7 @@ class _ManagementPageState extends State<ManagementPage> {
 }
 
 class _TopEditUSerInfoBar extends StatelessWidget {
-  const _TopEditUSerInfoBar({super.key, required this.user});
+  const _TopEditUSerInfoBar({required this.user});
   final User user;
 
   @override

@@ -155,45 +155,47 @@ class PersonelMainManager {
   }
 
   /// 📌 **Yatırım Miktarını Güncelleme (Mevcut Değerin Üzerine Ekleme)**
-  Future<bool> updateInvestmentAmount(
-      BuildContext context, String customerId, double additionalAmount) async {
+  Future<bool> updateInvestmentAmount(BuildContext context, String customerId,
+      double additionalAmount, double oldInvestmentAmount) async {
     final String? token =
         Provider.of<AuthProvider>(context, listen: false).token;
 
     if (token == null) {
-      throw Exception("Yetkisiz işlem: Token bulunamadı!");
+      print("❌ Yetkisiz işlem: Token bulunamadı!");
+      return false;
     }
 
     // **Token içinden rol kontrolü**
     Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+    print(decodedToken['role']);
+    print("Eklenen miktar: $additionalAmount");
+
     if (decodedToken["role"] != "personel") {
-      throw Exception(
-          "Yetkisiz işlem: Sadece personeller yatırım güncelleyebilir!");
+      print("❌ Yetkisiz işlem: Sadece personeller yatırım güncelleyebilir!");
+      return false;
     }
 
     try {
-      // **Önce mevcut müşteri verisini çekelim**
-      final response = await _dio.get('/customers/$customerId');
-
+      // **Direkt PUT isteği atıyoruz, mevcut değeri çekmeden güncelliyoruz**
+      double updatedInvestment = oldInvestmentAmount + additionalAmount;
+      print(updatedInvestment);
+      final response = await _dio.put('/customers/$customerId',
+          data: {"investment_amount": updatedInvestment});
       if (response.statusCode == 200) {
-        Map<String, dynamic> customerData = response.data;
-
-        double currentInvestment =
-            (customerData["investment_amount"] ?? 0).toDouble();
-        double updatedInvestment =
-            currentInvestment + additionalAmount; // ✅ Yeni miktarı ekliyoruz
-
-        // **Güncelleme isteği atıyoruz**
-        final updateResponse = await _dio.put('/customers/$customerId', data: {
-          "investment_amount": updatedInvestment,
-        });
-
-        return updateResponse.statusCode == 200;
+        print("✅ Yatırım miktarı başarıyla güncellendi.");
+        return true;
       } else {
-        throw Exception("Müşteri verisi alınamadı: ${response.statusCode}");
+        print("❌ Güncelleme başarısız: ${response.statusCode}");
+        return false;
       }
     } catch (e) {
-      print("Yatırım güncelleme hatası: $e");
+      if (e is DioException) {
+        print("❌ Dio Hatası: ${e.response?.data}");
+        print("❌ HTTP Kodu: ${e.response?.statusCode}");
+        print("❌ Dio Mesajı: ${e.message}");
+      } else {
+        print("❌ Beklenmeyen Hata: $e");
+      }
       return false;
     }
   }
@@ -203,39 +205,40 @@ class PersonelMainManager {
       _usersStreamController.stream;
 
   /// 📌 **API'yi her 5 saniyede bir kontrol eder ve yeni veriyi stream'e gönderir**
-  void startFetchingAssignedCustomers(BuildContext context) {
-    Timer.periodic(const Duration(seconds: 3), (timer) async {
-      try {
-        final newUsers = await fetchAssignedCustomers(context);
-        _usersStreamController.add(newUsers);
-      } catch (e) {
-        print("Stream Güncelleme Hatası: $e");
-      }
-    });
-  }
 
   /// 📌 **API'den Atanmış Müşterileri Çeker**
-  Future<List<User>> fetchAssignedCustomers(BuildContext context) async {
+
+  Future<void> fetchAssignedCustomers(BuildContext context) async {
     final String? token =
         Provider.of<AuthProvider>(context, listen: false).token;
 
     if (token == null) {
-      throw Exception("Yetkisiz işlem: Token bulunamadı!");
+      print("❌ Yetkisiz işlem: Token bulunamadı!");
+      return;
     }
 
     try {
       final response = await _dio.get('/customers/assigned');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.data);
-        return jsonData.map<User>((user) => User.fromJson(user)).toList();
+        print("📢 API'den gelen veri: ${response.data}");
+
+        // **Eğer gelen veri string ise, önce decode et!**
+        final List<dynamic> jsonData = response.data is String
+            ? jsonDecode(response.data) // Eğer String ise JSON olarak parse et
+            : response.data; // Eğer zaten List ise direkt kullan
+
+        // **User modeline çevir**
+        final List<User> users =
+            jsonData.map<User>((user) => User.fromJson(user)).toList();
+
+        _usersStreamController.add(users); // ✅ Stream'e yeni veriyi ekledik
+        print("✅ Yeni müşteri listesi güncellendi.");
       } else {
-        throw Exception(
-            "Atanmış müşteriler yüklenemedi: ${response.statusCode}");
+        print("❌ Atanmış müşteriler yüklenemedi: ${response.statusCode}");
       }
     } catch (e) {
-      print("Hata oluştu: $e");
-      throw Exception("API'den veri alınamadı!");
+      print("❌ API'den veri alınamadı: $e");
     }
   }
 
@@ -270,6 +273,45 @@ class PersonelMainManager {
 }
 
 class PersonelMainManagerLocal {
+  void showAccountSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hangi hesabı açmak istiyorsunuz?'),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: openNormalTraderLink,
+                  icon: const Icon(Icons.chat, color: Colors.white),
+                  label: const Text('Trader Hesabı'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16), // Butonlar arasında boşluk
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: openCtraderLink,
+                  icon: const Icon(Icons.account_balance, color: Colors.white),
+                  label: const Text('CTrader Hesabı'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   ///Send Whatsapp Message with urllaunc
   void sendWhatsAppMessage(String phoneNumber) async {
     String url = "https://web.whatsapp.com/send?phone=$phoneNumber";
@@ -313,6 +355,28 @@ class PersonelMainManagerLocal {
           mode: LaunchMode.externalApplication);
     } else {
       throw "Gmail açılamadı!";
+    }
+  }
+
+  ///open normal trader id link
+  void openNormalTraderLink() async {
+    const url = 'https://google.com/';
+
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      print("Bağlantı açılamadı: $url");
+    }
+  }
+
+  ///open ctrader id link
+  void openCtraderLink() async {
+    const url = 'https://id.ctrader.com/';
+
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      print("Bağlantı açılamadı: $url");
     }
   }
 }

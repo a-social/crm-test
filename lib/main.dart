@@ -6,7 +6,6 @@ import 'package:crm_k/core/service/login_service.dart';
 import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/core/service/user_service.dart';
 import 'package:crm_k/screens/404/V/404.dart';
-import 'package:crm_k/screens/admin/add_person/VM/admin_add_person_viewmodule.dart';
 import 'package:crm_k/screens/admin/add_user/VM/add_user_vm.dart';
 import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/V/login_screen_view.dart';

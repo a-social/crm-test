@@ -28,11 +28,6 @@ void _cleanOldRequests() {
     timestamps
         .removeWhere((timestamp) => now.difference(timestamp) > timeFrame);
   });
-
-  // Eğer companiesCollection zaten başlatılmışsa tekrar başlatma!
-  if (companiesCollection == null) {
-    companiesCollection = db.collection('companies');
-  }
 }
 
 // 🔹 Rate Limiter Middleware (Geliştirilmiş)
@@ -776,9 +771,17 @@ Future<void> main() async {
       }
 
       // 🔹 **MongoDB UpdateOne Kullanımı**
+      final updateModifier = mongo.modify;
+      data.forEach((key, value) {
+        updateModifier.set(key, value);
+      });
+
       final result = await customersCollection.updateOne(
-          mongo.where.id(mongo.ObjectId.parse(id)),
-          mongo.modify.set('data', data));
+          mongo.where.id(mongo.ObjectId.parse(id)), updateModifier);
+      //
+      // final result = await customersCollection.updateOne(
+      //     mongo.where.id(mongo.ObjectId.parse(id)),
+      //     mongo.modify.);
 
       if (result.isAcknowledged) {
         return Response.ok(jsonEncode({"status": "success"}));
