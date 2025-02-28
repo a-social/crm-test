@@ -20,9 +20,9 @@ class CompanyManager {
       return List<Map<String, dynamic>>.from(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        print('Yetkilendirme hatası: Token geçersiz veya süresi dolmuş.');
+        // print('Yetkilendirme hatası: Token geçersiz veya süresi dolmuş.');
       } else {
-        print('Şirketleri çekerken hata oluştu: ${e.message}');
+        // print('Şirketleri çekerken hata oluştu: ${e.message}');
       }
       return [];
     }

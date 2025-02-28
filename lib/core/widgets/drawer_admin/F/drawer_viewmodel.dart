@@ -1,7 +1,6 @@
 import 'package:crm_k/screens/admin/add_company/V/add_company_view.dart';
 import 'package:crm_k/screens/admin/add_person/V/admin_add_person.dart';
 import 'package:crm_k/screens/admin/add_user/V/add_user.dart';
-import 'package:crm_k/screens/admin/add_user_from_export/V/add_user_from_export.dart';
 import 'package:crm_k/screens/admin/auto_user_load/V/auto_user_view.dart';
 import 'package:crm_k/screens/admin/dashboard/V/dashboard_view.dart';
 import 'package:crm_k/screens/admin/delete_company/V/delete_company.dart';
@@ -38,7 +37,7 @@ class DynamicDrawerVMAdmin {
         {
           "title": "Veri Seti Ekle",
           "icon": Icons.file_upload_outlined,
-          "page": UploadUserScreen()
+          "page": AdminFunctionLoadDatButton()
         },
       ]
     },

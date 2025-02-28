@@ -7,16 +7,13 @@ import 'package:crm_k/core/service/personel_service.dart';
 import 'package:crm_k/core/service/user_service.dart';
 import 'package:crm_k/screens/404/V/404.dart';
 import 'package:crm_k/screens/admin/add_user/VM/add_user_vm.dart';
-import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
-import 'package:crm_k/screens/personnel/normal_login/V/login_screen_view.dart';
+import 'package:crm_k/screens/login_screen/homeparent_view.dart';
 import 'package:crm_k/screens/personnel/personel_chat/VM/personel_chat_vm.dart';
-import 'package:crm_k/test2.dart';
 import 'package:crm_k/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:crm_k/core/widgets/loading_view/VM/loading_viewmodule.dart';
-import 'package:crm_k/screens/admin/home_screen/V/home_screen_view.dart';
 import 'package:crm_k/screens/personnel/normal_login/VM/login_screen_viewmodule.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -64,18 +61,9 @@ class MyApp extends StatelessWidget {
         theme: MaterialTheme(TextTheme.of(context)).light().copyWith(
               scaffoldBackgroundColor: ThemeData().cardColor,
             ),
-        initialRoute: '/login-view',
+        home: HomeButtons(),
         onUnknownRoute: (settings) =>
             MaterialPageRoute(builder: (context) => PageNotFoundScreen()),
-        routes: {
-          // '/' : (context) => AuthChecker(),
-          '/admin-login-view': (context) => const AdminLogin(),
-          '/admin-dashboard': (context) => const HomeScreenView(),
-          '/home': (context) => const HomeScreenView(),
-          '/login-view': (context) => LoginScreen(),
-          '/404': (context) => PageNotFoundScreen(),
-          '/--test': (context) => Test2View()
-        },
       ),
     );
   }

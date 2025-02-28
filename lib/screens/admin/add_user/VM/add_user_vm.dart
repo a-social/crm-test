@@ -1,3 +1,4 @@
+import 'package:crm_k/screens/admin/admin_login/V/admin_login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_k/core/models/user_model/user_mode.dart';
 import 'package:crm_k/core/service/admin_service.dart';
@@ -47,9 +48,11 @@ class UserAddViewModel extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Kullanıcı başarıyla eklendi!")),
       );
-      Navigator.pushNamedAndRemoveUntil(
+      Navigator.pushAndRemoveUntil(
         context,
-        '/admin-dashboard',
+        MaterialPageRoute(
+          builder: (context) => AdminLogin(),
+        ),
         (route) => false,
       );
     } catch (e) {

@@ -1,5 +1,4 @@
 import 'package:crm_k/core/service/personel_service.dart';
-import 'package:crm_k/core/widgets/fast_links/V/fast_link_view.dart';
 import 'package:crm_k/screens/admin/dashboard/V/right_panel/V/right_panel_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

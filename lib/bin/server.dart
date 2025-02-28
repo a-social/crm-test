@@ -806,7 +806,7 @@ Future<void> main() async {
           .addHandler(router);
 
       final server =
-          await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
+          await shelf_io.serve(handler, InternetAddress.anyIPv4, 80);
       if (result.isAcknowledged) {
         return Response.ok(jsonEncode({"status": "success"}));
       } else {
@@ -883,7 +883,7 @@ Future<void> main() async {
       .addMiddleware(corsMiddleware)
       .addHandler(router);
 
-  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080);
+  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 80);
   print(
       '✅ Sunucu şu serviste açık http://${server.address.host}:${server.port}');
   print('✅ MongoDB Bağlantısı Yapıldı.');

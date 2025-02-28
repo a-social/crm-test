@@ -279,9 +279,7 @@ class _PersonnelSelectionScreen extends StatefulWidget {
       initialSelectedPersonnel; // 📌 Önceden seçili olan personeller
 
   const _PersonnelSelectionScreen(
-      {super.key,
-      required this.onPersonnelSelected,
-      this.initialSelectedPersonnel});
+      {required this.onPersonnelSelected, this.initialSelectedPersonnel});
 
   @override
   _PersonnelSelectionScreenState createState() =>
@@ -454,7 +452,7 @@ class _PersonnelSelectionScreenState extends State<_PersonnelSelectionScreen> {
 
 //-----
 class _FileUploadScreen extends StatefulWidget {
-  const _FileUploadScreen({super.key, required this.onUsersConverted});
+  const _FileUploadScreen({required this.onUsersConverted});
   final Function(List<User>) onUsersConverted;
 
   @override

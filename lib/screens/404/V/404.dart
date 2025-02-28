@@ -1,3 +1,4 @@
+import 'package:crm_k/screens/personnel/normal_login/V/login_screen_view.dart';
 import 'package:flutter/material.dart';
 
 class PageNotFoundScreen extends StatefulWidget {
@@ -76,8 +77,12 @@ class _PageNotFoundScreenState extends State<PageNotFoundScreen>
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/login-view', (route) => false);
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginScreen(),
+                    ),
+                    (route) => false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
